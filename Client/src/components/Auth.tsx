@@ -1,66 +1,68 @@
-import { useState } from 'react'
-import { useAuth } from '../hooks/useAuth'
+import { useState } from "react";
+import { useAuth } from "../hooks/useAuth";
 
-type Mode = 'signin' | 'signup'
+type Mode = "signin" | "signup";
 
 interface AuthProps {
-  onSuccess: () => void
+  onSuccess: () => void;
 }
 
 const Auth = ({ onSuccess }: AuthProps) => {
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp } = useAuth();
 
-  const [mode, setMode]         = useState<Mode>('signin')
-  const [name, setName]         = useState('')
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError]       = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [success, setSuccess]   = useState('')
+  const [mode, setMode] = useState<Mode>("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = async () => {
-    setError('')
-    setSuccess('')
-    setLoading(true)
+    setError("");
+    setSuccess("");
+    setLoading(true);
 
     try {
-      if (mode === 'signup') {
-        const { error } = await signUp(email, password, name)
-        if (error) throw error
-        setSuccess('Check your email to confirm your account!')
+      if (mode === "signup") {
+        const { error } = await signUp(email, password, name);
+        if (error) throw error;
+        setSuccess("Check your email to confirm your account!");
       } else {
-        const { error } = await signIn(email, password)
-        if (error) throw error
-        onSuccess()   // close modal on successful login
+        const { error } = await signIn(email, password);
+        if (error) throw error;
+        onSuccess(); // close modal on successful login
       }
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-md p-8">
       <div className="text-center mb-8">
-        <h1 className="text-[26px] font-extrabold text-[var(--color-primary-navy)] tracking-tight">
+        <h1 className="text-[26px] font-extrabold text-(--color-primary-navy) tracking-tight">
           MyRight
         </h1>
         <p className="text-gray-500 text-sm mt-1">
-          {mode === 'signin' ? 'Welcome back' : 'Create your account'}
+          {mode === "signin" ? "Welcome back" : "Create your account"}
         </p>
       </div>
 
       <div className="flex flex-col gap-4">
-        {mode === 'signup' && (
+        {mode === "signup" && (
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">Full Name</label>
+            <label className="text-sm font-medium text-gray-700">
+              Full Name
+            </label>
             <input
               type="text"
               placeholder="John Doe"
               value={name}
-              onChange={e => setName(e.target.value)}
-              className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[var(--color-primary-navy)] transition-colors"
+              onChange={(e) => setName(e.target.value)}
+              className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-(--color-primary-navy) transition-colors"
             />
           </div>
         )}
@@ -71,8 +73,8 @@ const Auth = ({ onSuccess }: AuthProps) => {
             type="email"
             placeholder="you@example.com"
             value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[var(--color-primary-navy)] transition-colors"
+            onChange={(e) => setEmail(e.target.value)}
+            className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-(--color-primary-navy) transition-colors"
           />
         </div>
 
@@ -82,38 +84,52 @@ const Auth = ({ onSuccess }: AuthProps) => {
             type="password"
             placeholder="••••••••"
             value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[var(--color-primary-navy)] transition-colors"
+            onChange={(e) => setPassword(e.target.value)}
+            className="border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-(--color-primary-navy) transition-colors"
           />
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm bg-red-50 px-4 py-2.5 rounded-lg">{error}</p>
+          <p className="text-red-500 text-sm bg-red-50 px-4 py-2.5 rounded-lg">
+            {error}
+          </p>
         )}
         {success && (
-          <p className="text-green-600 text-sm bg-green-50 px-4 py-2.5 rounded-lg">{success}</p>
+          <p className="text-green-600 text-sm bg-green-50 px-4 py-2.5 rounded-lg">
+            {success}
+          </p>
         )}
 
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="w-full bg-[var(--color-primary-navy)] text-white rounded-xl py-3 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+          className="w-full bg-(--color-primary-navy) text-white rounded-xl py-3 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed mt-1"
         >
-          {loading ? 'Please wait...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
+          {loading
+            ? "Please wait..."
+            : mode === "signin"
+              ? "Sign In"
+              : "Create Account"}
         </button>
 
         <p className="text-center text-sm text-gray-500">
-          {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+          {mode === "signin"
+            ? "Don't have an account? "
+            : "Already have an account? "}
           <button
-            onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setSuccess('') }}
-            className="text-[var(--color-primary-navy)] font-semibold hover:underline"
+            onClick={() => {
+              setMode(mode === "signin" ? "signup" : "signin");
+              setError("");
+              setSuccess("");
+            }}
+            className="text-(--color-primary-navy) font-semibold hover:underline"
           >
-            {mode === 'signin' ? 'Sign Up' : 'Sign In'}
+            {mode === "signin" ? "Sign Up" : "Sign In"}
           </button>
         </p>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Auth
+export default Auth;
