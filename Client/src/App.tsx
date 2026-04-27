@@ -11,6 +11,7 @@ const App = () => {
   const { user, loading } = useAuth()
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
+  const [showAuth, setShowAuth] = useState(false)   // 👈 controls auth modal
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true)
@@ -23,7 +24,6 @@ const App = () => {
     }
   }, [])
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -32,10 +32,6 @@ const App = () => {
     )
   }
 
-  // Not logged in
-  if (!user) return <Auth />
-
-  // Logged in
   return (
     <div>
       {isOffline && (
@@ -44,11 +40,35 @@ const App = () => {
         </div>
       )}
 
-      <Navbar />
-      <Hero />
+      {/* Always show landing page */}
+      <Navbar onLoginClick={() => setShowAuth(true)} user={user} />
+      <Hero onGetStarted={() => setShowAuth(true)} />
       <Features />
-      <CTA />
+      <CTA onGetStarted={() => setShowAuth(true)} />
 
+      {/* Auth modal — shown when showAuth is true and user is not logged in */}
+      {showAuth && !user && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            onClick={() => setShowAuth(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="relative w-full max-w-md">
+              {/* Close button */}
+              <button
+                onClick={() => setShowAuth(false)}
+                className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow flex items-center justify-center text-gray-500 hover:text-gray-800 z-10"
+              >
+                ✕
+              </button>
+              <Auth onSuccess={() => setShowAuth(false)} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Update modal */}
       {needRefresh && (
         <>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
