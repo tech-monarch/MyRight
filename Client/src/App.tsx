@@ -1,31 +1,43 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"
 import { useRegisterSW } from 'virtual:pwa-register/react'
-import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import Features from "./components/Features";
-import CTA from "./components/CTA";
+import { useAuth } from "./hooks/useAuth"
+import Auth from "./components/Auth"
+import Navbar from "./components/Navbar"
+import Hero from "./components/Hero"
+import Features from "./components/Features"
+import CTA from "./components/CTA"
 
 const App = () => {
-  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW();
-
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const { user, loading } = useAuth()
+  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
 
   useEffect(() => {
-    const goOffline = () => setIsOffline(true);
-    const goOnline  = () => setIsOffline(false);
-
-    window.addEventListener('offline', goOffline);
-    window.addEventListener('online',  goOnline);
-
+    const goOffline = () => setIsOffline(true)
+    const goOnline  = () => setIsOffline(false)
+    window.addEventListener('offline', goOffline)
+    window.addEventListener('online',  goOnline)
     return () => {
-      window.removeEventListener('offline', goOffline);
-      window.removeEventListener('online',  goOnline);
-    };
-  }, []);
+      window.removeEventListener('offline', goOffline)
+      window.removeEventListener('online',  goOnline)
+    }
+  }, [])
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-sm text-gray-400">Loading...</p>
+      </div>
+    )
+  }
+
+  // Not logged in
+  if (!user) return <Auth />
+
+  // Logged in
   return (
     <div>
-      {/* Offline banner */}
       {isOffline && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500 text-white text-center text-sm py-2 font-medium">
           You're offline — some features may be unavailable
@@ -37,7 +49,6 @@ const App = () => {
       <Features />
       <CTA />
 
-      {/* Update modal */}
       {needRefresh && (
         <>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />
@@ -50,9 +61,7 @@ const App = () => {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Update Available</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  A new version of the app is ready. Update now for the latest features and fixes.
-                </p>
+                <p className="text-sm text-gray-500 mt-1">A new version of the app is ready.</p>
               </div>
               <div className="flex flex-col w-full gap-2">
                 <button
@@ -73,7 +82,7 @@ const App = () => {
         </>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default App
