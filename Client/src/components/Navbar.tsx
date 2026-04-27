@@ -1,15 +1,24 @@
+import { useState } from "react";
+import { RiMenu3Line, RiCloseLine, RiSearchLine } from "react-icons/ri";
+
 const Navbar = () => {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <nav className="flex sticky top-0 z-50 justify-between items-center px-12 py-4 bg-(--color-bg-white) border-b border-(--color-border-light) font-sans">
-      <div className="flex items-center gap-12">
-        <div className="text-[22px] font-extrabold text-[var(--color-primary-navy)] tracking-tight">
+    <nav className="sticky top-0 z-50 bg-(--color-bg-white) border-b border-(--color-border-light) font-sans">
+      {/* Main bar */}
+      <div className="flex justify-between items-center px-5 md:px-12 py-4">
+        {/* Logo */}
+        <div className="text-[22px] font-extrabold text-(--color-primary-navy) tracking-tight">
           MyRight
         </div>
-        <ul className="flex list-none gap-8 m-0 p-0">
+
+        {/* Desktop nav links */}
+        <ul className="hidden md:flex list-none gap-8 m-0 p-0">
           <li>
             <a
               href="#"
-              className="text-[var(--color-primary-navy)] text-sm font-medium transition-colors duration-200 relative pb-2 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-0.5 after:bg-[var(--color-primary-navy)] after:rounded-full"
+              className="text-(--color-primary-navy) text-sm font-medium transition-colors duration-200 relative pb-2 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-0.5 after:bg-(--color-primary-navy) after:rounded-full"
             >
               Dashboard
             </a>
@@ -17,7 +26,7 @@ const Navbar = () => {
           <li>
             <a
               href="#"
-              className="text-[var(--color-text-muted)] text-sm font-medium transition-colors duration-200 relative pb-2 hover:text-[var(--color-primary-navy)]"
+              className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)"
             >
               Mediation
             </a>
@@ -25,39 +34,89 @@ const Navbar = () => {
           <li>
             <a
               href="#"
-              className="text-[var(--color-text-muted)] text-sm font-medium transition-colors duration-200 relative pb-2 hover:text-[var(--color-primary-navy)]"
+              className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)"
             >
               About ADR
             </a>
           </li>
         </ul>
+
+        {/* Desktop right side */}
+        <div className="hidden md:flex items-center gap-4">
+          <div className="flex items-center bg-(--color-bg-off-white) rounded-lg px-4 py-2 gap-2">
+            <RiSearchLine className="text-(--color-text-muted) w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search Case"
+              className="border-none bg-transparent outline-none text-[13px] text-(--color-text-main) w-27.5 placeholder:text-(--color-text-muted)"
+            />
+          </div>
+          <button className="bg-(--color-primary-navy) text-(--color-bg-white) rounded-md px-5 py-2.5 text-sm font-semibold cursor-pointer transition-opacity duration-200 hover:opacity-90">
+            Start Dispute
+          </button>
+          <div className="w-9.5 h-9.5 bg-[#e6e9ee] rounded-lg cursor-pointer" />
+        </div>
+
+        {/* Mobile right: avatar + hamburger */}
+        <div className="flex md:hidden items-center gap-3">
+          <div className="w-8.5 h-8.5 bg-[#e6e9ee] rounded-lg cursor-pointer" />
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="text-(--color-primary-navy) p-1"
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <RiCloseLine size={24} /> : <RiMenu3Line size={24} />}
+          </button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex items-center bg-[var(--color-bg-off-white)] rounded-lg px-4 py-2 gap-2">
-          <svg
-            className="text-[var(--color-text-muted)] w-4 h-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search Case"
-            className="border-none bg-transparent outline-none text-[13px] text-[var(--color-text-main)] w-[110px] placeholder:text-[var(--color-text-muted)]"
-          />
+      {/* Mobile dropdown */}
+      {menuOpen && (
+        <div className="md:hidden border-t border-(--color-border-light) px-5 py-4 flex flex-col gap-4">
+          {/* Search */}
+          <div className="flex items-center bg-(--color-bg-off-white) rounded-lg px-4 py-2.5 gap-2">
+            <RiSearchLine className="text-(--color-text-muted) w-4 h-4 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search Case"
+              className="border-none bg-transparent outline-none text-[13px] text-(--color-text-main) w-full placeholder:text-(--color-text-muted)"
+            />
+          </div>
+
+          {/* Nav links */}
+          <ul className="flex flex-col list-none gap-1 m-0 p-0">
+            <li>
+              <a
+                href="#"
+                className="block py-2.5 text-sm font-semibold text-(--color-primary-navy)"
+              >
+                Dashboard
+              </a>
+            </li>
+            <li>
+              <a
+                href="#"
+                className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)"
+              >
+                Mediation
+              </a>
+            </li>
+            <li>
+              <a
+                href="#"
+                className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)"
+              >
+                About ADR
+              </a>
+            </li>
+          </ul>
+
+          {/* CTA */}
+          <button className="w-full bg-(--color-primary-navy) text-(--color-bg-white) rounded-md px-5 py-3 text-sm font-semibold cursor-pointer transition-opacity duration-200 hover:opacity-90">
+            Start Dispute
+          </button>
         </div>
-        <button className="bg-[var(--color-primary-navy)] text-[var(--color-bg-white)] rounded-md px-5 py-2.5 text-sm font-semibold cursor-pointer transition-opacity duration-200 hover:opacity-90">
-          Start Dispute
-        </button>
-        <div className="w-[38px] h-[38px] bg-[#e6e9ee] rounded-lg cursor-pointer"></div>
-      </div>
+      )}
     </nav>
   );
 };
