@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react"
+import { Routes, Route } from "react-router-dom"
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { useAuth } from "./hooks/useAuth"
 import Auth from "./components/Auth"
 import Navbar from "./components/Navbar"
-import Hero from "./components/Hero"
-import Features from "./components/Features"
-import CTA from "./components/CTA"
+import Home from "./pages/Home"
+import AboutADR from "./pages/AboutADR"
 
 const App = () => {
   const { user, loading } = useAuth()
@@ -42,9 +42,11 @@ const App = () => {
 
       {/* Always show landing page */}
       <Navbar onLoginClick={() => setShowAuth(true)} user={user} />
-      <Hero onGetStarted={() => setShowAuth(true)} />
-      <Features />
-      <CTA onGetStarted={() => setShowAuth(true)} />
+      
+      <Routes>
+        <Route path="/" element={<Home onGetStarted={() => setShowAuth(true)} />} />
+        <Route path="/about" element={<AboutADR />} />
+      </Routes>
 
       {/* Auth modal — shown when showAuth is true and user is not logged in */}
       {showAuth && !user && (
