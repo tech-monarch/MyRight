@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { RiMenu3Line, RiCloseLine, RiSearchLine } from "react-icons/ri";
+import { Link } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
 
 interface NavbarProps {
@@ -19,19 +20,19 @@ const Navbar = ({ onLoginClick, user }: NavbarProps) => {
 
         <ul className="hidden md:flex list-none gap-8 m-0 p-0">
           <li>
-            <a href="#" className="text-(--color-primary-navy) text-sm font-medium transition-colors duration-200 relative pb-2 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-0.5 after:bg-(--color-primary-navy) after:rounded-full">
+            <Link to="/" className="text-(--color-primary-navy) text-sm font-medium transition-colors duration-200 relative pb-2 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-0.5 after:bg-(--color-primary-navy) after:rounded-full">
               Dashboard
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="#" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
+            <Link to="#" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
               Mediation
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="#" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
+            <Link to="/about" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
               About ADR
-            </a>
+            </Link>
           </li>
         </ul>
 
@@ -94,9 +95,9 @@ const Navbar = ({ onLoginClick, user }: NavbarProps) => {
           </div>
 
           <ul className="flex flex-col list-none gap-1 m-0 p-0">
-            <li><a href="#" className="block py-2.5 text-sm font-semibold text-(--color-primary-navy)">Dashboard</a></li>
-            <li><a href="#" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">Mediation</a></li>
-            <li><a href="#" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">About ADR</a></li>
+            <li><Link to="/" className="block py-2.5 text-sm font-semibold text-(--color-primary-navy)">Dashboard</Link></li>
+            <li><Link to="#" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">Mediation</Link></li>
+            <li><Link to="/about" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">About ADR</Link></li>
           </ul>
 
           {user ? (
