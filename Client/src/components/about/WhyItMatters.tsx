@@ -7,7 +7,7 @@ const WhyItMatters = () => {
         <div className="flex-1 w-full order-2 md:order-1">
           <div className="w-full max-w-125 h-150 rounded-2xl overflow-hidden shadow-2xl relative mx-auto md:mx-0">
             <img
-              src="/3.png"
+              src="/2.png"
               alt="Nigerian cityscape at night"
               className="w-full h-full object-cover brightness-75 contrast-125"
             />

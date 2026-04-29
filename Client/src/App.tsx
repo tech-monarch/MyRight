@@ -6,6 +6,8 @@ import Auth from "./components/Auth"
 import Navbar from "./components/Navbar"
 import Home from "./pages/Home"
 import AboutADR from "./pages/AboutADR"
+import Dashboard from "./pages/Dashboard"
+import CreateDispute from "./pages/CreateDispute"
 
 const App = () => {
   const { user, loading } = useAuth()
@@ -46,6 +48,8 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Home onGetStarted={() => setShowAuth(true)} />} />
         <Route path="/about" element={<AboutADR />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dispute/new" element={<CreateDispute />} />
       </Routes>
 
       {/* Auth modal — shown when showAuth is true and user is not logged in */}
