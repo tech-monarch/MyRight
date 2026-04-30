@@ -6,11 +6,15 @@ import ChatLoadingIndicator from "../components/dispute/ChatLoadingIndicator";
 import { useDisputeChat } from "../hooks/useDisputeChat";
 
 export default function CreateDispute() {
-  const { messages, handleSend, isInputDisabled, placeholder, isLoading } =
-    useDisputeChat();
+  const {
+    messages,
+    handleSend,
+    isInputDisabled,
+    isLoading,
+    modal,
+  } = useDisputeChat(); //  added modal
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
@@ -22,9 +26,8 @@ export default function CreateDispute() {
 
   return (
     <div className="flex flex-col h-screen bg-white font-sans overflow-hidden">
+      {modal} {/*  render modal here */}
       <ChatHeader />
-
-      {/* Chat Feed */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto scroll-smooth pb-8"
@@ -32,17 +35,10 @@ export default function CreateDispute() {
         {messages.map((msg, i) => (
           <ChatMessage key={i} {...msg} />
         ))}
-
         {isLoading && <ChatLoadingIndicator />}
       </div>
-
-      {/* Fixed Bottom Input */}
       <div className="shrink-0 bg-gradient-to-t from-white via-white to-white/0 pt-6">
-        <ChatInput
-          onSend={handleSend}
-          disabled={isInputDisabled}
-          placeholder={placeholder}
-        />
+        <ChatInput onSend={handleSend} disabled={isInputDisabled} />
       </div>
     </div>
   );

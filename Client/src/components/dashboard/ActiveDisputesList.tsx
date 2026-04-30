@@ -4,7 +4,7 @@ import {
   RiFileList3Line,
   RiArrowRightLine,
 } from "react-icons/ri";
-import type { Dispute } from "../../../types/types";
+import type { Dispute } from "../../types/types";
 
 interface ActiveDisputesListProps {
   disputes: Dispute[];
