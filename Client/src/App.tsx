@@ -1,35 +1,39 @@
-import { useState, useEffect } from "react"
-import { Routes, Route } from "react-router-dom"
-import { useRegisterSW } from 'virtual:pwa-register/react'
-import { useAuth } from "./hooks/useAuth"
-import Auth from "./components/Auth"
-import Navbar from "./components/Navbar"
-import Home from "./pages/Home"
-import AboutADR from "./pages/AboutADR"
+import { useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
+import { useRegisterSW } from "virtual:pwa-register/react";
+import { useAuth } from "./hooks/useAuth";
+import Auth from "./components/Auth";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import AboutADR from "./pages/AboutADR";
+import Footer from "./components/Footer";
 
 const App = () => {
-  const { user, loading } = useAuth()
-  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
-  const [isOffline, setIsOffline] = useState(!navigator.onLine)
-  const [showAuth, setShowAuth] = useState(false)   // 👈 controls auth modal
+  const { user, loading } = useAuth();
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW();
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [showAuth, setShowAuth] = useState(false); // 👈 controls auth modal
 
   useEffect(() => {
-    const goOffline = () => setIsOffline(true)
-    const goOnline  = () => setIsOffline(false)
-    window.addEventListener('offline', goOffline)
-    window.addEventListener('online',  goOnline)
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => setIsOffline(false);
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
     return () => {
-      window.removeEventListener('offline', goOffline)
-      window.removeEventListener('online',  goOnline)
-    }
-  }, [])
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
+  }, []);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-sm text-gray-400">Loading...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -42,12 +46,15 @@ const App = () => {
 
       {/* Always show landing page */}
       <Navbar onLoginClick={() => setShowAuth(true)} user={user} />
-      
+
       <Routes>
-        <Route path="/" element={<Home onGetStarted={() => setShowAuth(true)} />} />
+        <Route
+          path="/"
+          element={<Home onGetStarted={() => setShowAuth(true)} />}
+        />
         <Route path="/about" element={<AboutADR />} />
       </Routes>
-
+      <Footer />
       {/* Auth modal — shown when showAuth is true and user is not logged in */}
       {showAuth && !user && (
         <>
@@ -77,13 +84,27 @@ const App = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4 text-center">
               <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center">
-                <svg className="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                <svg
+                  className="w-7 h-7 text-blue-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
                 </svg>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Update Available</h2>
-                <p className="text-sm text-gray-500 mt-1">A new version of the app is ready.</p>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Update Available
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  A new version of the app is ready.
+                </p>
               </div>
               <div className="flex flex-col w-full gap-2">
                 <button
@@ -104,7 +125,7 @@ const App = () => {
         </>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;
