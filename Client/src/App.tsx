@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { useAuth } from "./hooks/useAuth"
 import Auth from "./components/Auth"
@@ -9,11 +9,18 @@ import AboutADR from "./pages/AboutADR"
 import Dashboard from "./pages/Dashboard"
 import CreateDispute from "./pages/CreateDispute"
 
+// Wraps routes that require authentication
+const ProtectedRoute = ({ user, loading, children }: { user: any; loading: boolean; children: React.ReactNode }) => {
+  if (loading) return null
+  if (!user) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 const App = () => {
   const { user, loading } = useAuth()
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
-  const [isOffline, setIsOffline] = useState(!navigator.onLine)
-  const [showAuth, setShowAuth] = useState(false)   // 👈 controls auth modal
+  const [isOffline, setIsOffline]   = useState(!navigator.onLine)
+  const [showAuth, setShowAuth]     = useState(false)
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true)
@@ -25,6 +32,11 @@ const App = () => {
       window.removeEventListener('online',  goOnline)
     }
   }, [])
+
+  // Close auth modal automatically when user logs in
+  useEffect(() => {
+    if (user) setShowAuth(false)
+  }, [user])
 
   if (loading) {
     return (
@@ -42,17 +54,34 @@ const App = () => {
         </div>
       )}
 
-      {/* Always show landing page */}
       <Navbar onLoginClick={() => setShowAuth(true)} user={user} />
-      
+
       <Routes>
         <Route path="/" element={<Home onGetStarted={() => setShowAuth(true)} />} />
         <Route path="/about" element={<AboutADR />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dispute/new" element={<CreateDispute />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute user={user} loading={loading}>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dispute/new"
+          element={
+            <ProtectedRoute user={user} loading={loading}>
+              <CreateDispute />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* Auth modal — shown when showAuth is true and user is not logged in */}
+      {/* Auth modal */}
       {showAuth && !user && (
         <>
           <div
@@ -61,7 +90,6 @@ const App = () => {
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="relative w-full max-w-md">
-              {/* Close button */}
               <button
                 onClick={() => setShowAuth(false)}
                 className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow flex items-center justify-center text-gray-500 hover:text-gray-800 z-10"
@@ -74,7 +102,7 @@ const App = () => {
         </>
       )}
 
-      {/* Update modal */}
+      {/* PWA update modal */}
       {needRefresh && (
         <>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />

@@ -1,7 +1,11 @@
 import { RiRobot2Line, RiUserLine } from "react-icons/ri";
-import type { AIMessageProps } from "../../../types/types";
+import type { AIMessageProps } from "../../types/types";
 
-export default function ChatMessage({ role, content, animate = false }: AIMessageProps) {
+export default function ChatMessage({
+  role,
+  content,
+  animate = false,
+}: AIMessageProps) {
   const isAI = role === "ai";
 
   return (

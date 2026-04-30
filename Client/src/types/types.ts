@@ -66,11 +66,21 @@ export type DashboardStats = {
   resolvedCases: number;
 };
 
+// FIX: expanded to cover all categories Gemini and dummy data can return
 export type DisputeCategory =
   | "Landlord-Tenant"
   | "Business/Contract"
+  | "Business B2B"
   | "Employment"
   | "Consumer/Retail"
+  | "Consumer/Product"
+  | "Property/Real Estate"
+  | "Property"
+  | "Police/Law Enforcement"
+  | "Cult/Street Violence"
+  | "Family/Domestic Violence"
+  | "Debt/Finance"
+  | "Neighbour"
   | "Other";
 
 export type DisputeFormData = {
@@ -90,7 +100,8 @@ export type AIPhase =
   | "REVIEW_ASK"
   | "REVIEW_WAIT"
   | "SUBMITTING"
-  | "SUCCESS";
+  | "SUCCESS"
+  | "CLARIFYING_WAIT";
 
 export type AIMessageRole = "ai" | "user";
 
@@ -99,4 +110,3 @@ export interface AIMessageProps {
   content: string | React.ReactNode;
   animate?: boolean;
 }
-
