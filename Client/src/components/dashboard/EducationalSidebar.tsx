@@ -4,7 +4,7 @@ import {
   RiDownload2Line,
   RiFileCheckLine,
 } from "react-icons/ri";
-import type { Agreement } from "../../../types/types";
+import type { Agreement } from "../../types/types";
 
 interface EducationalSidebarProps {
   recentAgreements: Agreement[];
