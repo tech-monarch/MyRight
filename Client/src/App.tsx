@@ -26,10 +26,6 @@ const ProtectedRoute = ({ user, loading, children }: { user: any; loading: boole
 }
 
 const App = () => {
-  const { user, loading } = useAuth()
-  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
-  const [isOffline, setIsOffline]   = useState(!navigator.onLine)
-  const [showAuth, setShowAuth]     = useState(false)
   const { user, loading } = useAuth();
   const {
     needRefresh: [needRefresh],
