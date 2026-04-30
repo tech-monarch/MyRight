@@ -1,4 +1,4 @@
-import type { DashboardStats, Dispute, Agreement, User } from "../types/types";
+import type { DashboardStats, Dispute, Agreement, User } from "../src/types/types";
 
 export const DUMMY_USER: User = {
   id: "USR-0001",

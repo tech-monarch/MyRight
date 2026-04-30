@@ -1,6 +1,6 @@
 import { RiAddCircleLine, RiCalendarLine } from "react-icons/ri";
 import { format } from "date-fns";
-import type { User } from "../../../types/types";
+import type { User } from "../../types/types";
 import { paths } from "../../../utils/paths";
 
 interface DashboardHeaderProps {
