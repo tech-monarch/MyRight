@@ -8,6 +8,8 @@ import Home from "./pages/Home"
 import AboutADR from "./pages/AboutADR"
 import Dashboard from "./pages/Dashboard"
 import CreateDispute from "./pages/CreateDispute"
+import Footer from "./components/Footer"
+import ScrollToTop from "./components/ScrollToTop"
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -16,7 +18,7 @@ const App = () => {
     updateServiceWorker,
   } = useRegisterSW();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [showAuth, setShowAuth] = useState(false); // 👈 controls auth modal
+  const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // 👈 controls auth modal and its mode
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -46,35 +48,36 @@ const App = () => {
       )}
 
       {/* Always show landing page */}
-      <Navbar onLoginClick={() => setShowAuth(true)} user={user} />
+      <Navbar onLoginClick={() => setAuthMode("signin")} onSignupClick={() => setAuthMode("signup")} user={user} />
 
       <Routes>
         <Route
           path="/"
-          element={<Home onGetStarted={() => setShowAuth(true)} />}
+          element={<Home onGetStarted={() => setAuthMode("signup")} />}
         />
         <Route path="/about" element={<AboutADR />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dispute/new" element={<CreateDispute />} />
       </Routes>
+      <ScrollToTop/>
       <Footer />
-      {/* Auth modal — shown when showAuth is true and user is not logged in */}
-      {showAuth && !user && (
+      {/* Auth modal — shown when authMode is true and user is not logged in */}
+      {authMode && !user && (
         <>
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-            onClick={() => setShowAuth(false)}
+            onClick={() => setAuthMode(null)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="relative w-full max-w-md">
               {/* Close button */}
               <button
-                onClick={() => setShowAuth(false)}
+                onClick={() => setAuthMode(null)}
                 className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow flex items-center justify-center text-gray-500 hover:text-gray-800 z-10"
               >
                 ✕
               </button>
-              <Auth onSuccess={() => setShowAuth(false)} />
+              <Auth onSuccess={() => setAuthMode(null)} initialMode={authMode} />
             </div>
           </div>
         </>
