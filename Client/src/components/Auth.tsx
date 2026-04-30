@@ -5,12 +5,13 @@ type Mode = "signin" | "signup";
 
 interface AuthProps {
   onSuccess: () => void;
+  initialMode?: Mode;
 }
 
-const Auth = ({ onSuccess }: AuthProps) => {
+const Auth = ({ onSuccess, initialMode = "signin" }: AuthProps) => {
   const { signIn, signUp } = useAuth();
 
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -5,10 +5,11 @@ import type { User } from "@supabase/supabase-js";
 
 interface NavbarProps {
   onLoginClick: () => void
+  onSignupClick: () => void
   user: User | null
 }
 
-const Navbar = ({ onLoginClick, user }: NavbarProps) => {
+const Navbar = ({ onLoginClick, onSignupClick, user }: NavbarProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -59,19 +60,19 @@ const Navbar = ({ onLoginClick, user }: NavbarProps) => {
                 Log In
               </button>
               <button
-                onClick={onLoginClick}
+                onClick={onSignupClick}
                 className="bg-(--color-primary-navy) text-(--color-bg-white) rounded-md px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity"
               >
                 Get Started
               </button>
             </>
           )}
-          <div className="w-9.5 h-9.5 bg-[#e6e9ee] rounded-lg cursor-pointer" />
+          <img src="/avatar.png" alt="Profile" className="w-9.5 h-9.5 bg-[#e6e9ee] rounded-lg cursor-pointer" />
         </div>
 
         {/* Mobile right: avatar + hamburger */}
         <div className="flex md:hidden items-center gap-3">
-          <div className="w-8.5 h-8.5 bg-[#e6e9ee] rounded-lg cursor-pointer" />
+          <img src="/avatar.png" alt="Profile" className="w-8.5 h-8.5 bg-[#e6e9ee] rounded-lg cursor-pointer" />
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="text-(--color-primary-navy) p-1"
@@ -96,7 +97,7 @@ const Navbar = ({ onLoginClick, user }: NavbarProps) => {
 
           <ul className="flex flex-col list-none gap-1 m-0 p-0">
             <li><Link to="/" className="block py-2.5 text-sm font-semibold text-(--color-primary-navy)">Dashboard</Link></li>
-            <li><Link to="#" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">Mediation</Link></li>
+            <li><Link to="/mediation" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">Mediation</Link></li>
             <li><Link to="/about" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">About ADR</Link></li>
           </ul>
 
@@ -106,7 +107,7 @@ const Navbar = ({ onLoginClick, user }: NavbarProps) => {
             </button>
           ) : (
             <button
-              onClick={onLoginClick}
+              onClick={onSignupClick}
               className="w-full bg-(--color-primary-navy) text-(--color-bg-white) rounded-md px-5 py-3 text-sm font-semibold hover:opacity-90 transition-opacity"
             >
               Get Started
