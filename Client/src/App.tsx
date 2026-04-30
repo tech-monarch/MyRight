@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
-import { useRegisterSW } from "virtual:pwa-register/react";
-import { useAuth } from "./hooks/useAuth";
-import Auth from "./components/Auth";
-import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
-import AboutADR from "./pages/AboutADR";
-import Footer from "./components/Footer";
+import { useState, useEffect } from "react"
+import { Routes, Route } from "react-router-dom"
+import { useRegisterSW } from 'virtual:pwa-register/react'
+import { useAuth } from "./hooks/useAuth"
+import Auth from "./components/Auth"
+import Navbar from "./components/Navbar"
+import Home from "./pages/Home"
+import AboutADR from "./pages/AboutADR"
+import Dashboard from "./pages/Dashboard"
+import CreateDispute from "./pages/CreateDispute"
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -53,6 +54,8 @@ const App = () => {
           element={<Home onGetStarted={() => setShowAuth(true)} />}
         />
         <Route path="/about" element={<AboutADR />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dispute/new" element={<CreateDispute />} />
       </Routes>
       <Footer />
       {/* Auth modal — shown when showAuth is true and user is not logged in */}
