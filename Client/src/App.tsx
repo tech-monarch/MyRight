@@ -18,6 +18,13 @@ const ProtectedRoute = ({ user, loading, children }: { user: any; loading: boole
   return <>{children}</>
 }
 
+// Wraps routes that require authentication
+const ProtectedRoute = ({ user, loading, children }: { user: any; loading: boolean; children: React.ReactNode }) => {
+  if (loading) return null
+  if (!user) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 const App = () => {
   const { user, loading } = useAuth()
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
@@ -41,6 +48,11 @@ const App = () => {
       window.removeEventListener("online", goOnline);
     };
   }, []);
+
+  // Close auth modal automatically when user logs in
+  useEffect(() => {
+    if (user) setShowAuth(false)
+  }, [user])
 
   // Close auth modal automatically when user logs in
   useEffect(() => {
