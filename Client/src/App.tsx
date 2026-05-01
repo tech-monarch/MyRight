@@ -1,29 +1,33 @@
-import { useState, useEffect } from "react"
-import { Routes, Route, Navigate } from "react-router-dom"
-import { useRegisterSW } from 'virtual:pwa-register/react'
-import { useAuth } from "./hooks/useAuth"
-import Auth from "./components/Auth"
-import Navbar from "./components/Navbar"
-import Home from "./pages/Home"
-import AboutADR from "./pages/AboutADR"
-import Dashboard from "./pages/Dashboard"
-import CreateDispute from "./pages/CreateDispute"
-import Footer from "./components/Footer"
-import ScrollToTop from "./components/ScrollToTop"
+import { useState, useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useRegisterSW } from 'virtual:pwa-register/react';
+import { useAuth } from "./hooks/useAuth";
+import Auth from "./components/Auth";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import AboutADR from "./pages/AboutADR";
+import Dashboard from "./pages/Dashboard";
+import CreateDispute from "./pages/CreateDispute";
+import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
+
+// Infer the exact user type from the useAuth hook
+type UserType = ReturnType<typeof useAuth>['user'];
 
 // Wraps routes that require authentication
-const ProtectedRoute = ({ user, loading, children }: { user: any; loading: boolean; children: React.ReactNode }) => {
-  if (loading) return null
-  if (!user) return <Navigate to="/" replace />
-  return <>{children}</>
-}
-
-// Wraps routes that require authentication
-const ProtectedRoute = ({ user, loading, children }: { user: any; loading: boolean; children: React.ReactNode }) => {
-  if (loading) return null
-  if (!user) return <Navigate to="/" replace />
-  return <>{children}</>
-}
+const ProtectedRoute = ({
+  user,
+  loading,
+  children,
+}: {
+  user: UserType;        //  matches whatever useAuth returns (null or User object)
+  loading: boolean;
+  children: React.ReactNode;
+}) => {
+  if (loading) return null;
+  if (!user) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -32,7 +36,7 @@ const App = () => {
     updateServiceWorker,
   } = useRegisterSW();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // 👈 controls auth modal and its mode
+  const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // controls auth modal and its mode
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -45,15 +49,7 @@ const App = () => {
     };
   }, []);
 
-  // Close auth modal automatically when user logs in
-  useEffect(() => {
-    if (user) setShowAuth(false)
-  }, [user])
-
-  // Close auth modal automatically when user logs in
-  useEffect(() => {
-    if (user) setShowAuth(false)
-  }, [user])
+  // No need for an effect to clear authMode – the modal's render condition already hides it when user exists
 
   if (loading) {
     return (
@@ -71,8 +67,11 @@ const App = () => {
         </div>
       )}
 
-      {/* Always show landing page */}
-      <Navbar onLoginClick={() => setAuthMode("signin")} onSignupClick={() => setAuthMode("signup")} user={user} />
+      <Navbar
+        onLoginClick={() => setAuthMode("signin")}
+        onSignupClick={() => setAuthMode("signup")}
+        user={user}
+      />
 
       <Routes>
         <Route
@@ -98,12 +97,13 @@ const App = () => {
           }
         />
 
-        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <ScrollToTop/>
+
+      <ScrollToTop />
       <Footer />
-      {/* Auth modal — shown when authMode is true and user is not logged in */}
+
+      {/* Auth modal — shown when authMode is set and user is NOT logged in */}
       {authMode && !user && (
         <>
           <div
