@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { useRegisterSW } from 'virtual:pwa-register/react';
+import { useRegisterSW } from "virtual:pwa-register/react";
 import { useAuth } from "./hooks/useAuth";
 import Auth from "./components/Auth";
 import Navbar from "./components/Navbar";
