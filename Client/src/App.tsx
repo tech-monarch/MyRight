@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useAuth } from "./hooks/useAuth";
 import Auth from "./components/Auth";
@@ -21,6 +21,10 @@ const App = () => {
   } = useRegisterSW();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // controls auth modal and its mode
+  const location = useLocation();
+
+  const hideLayoutRoutes = ["/dashboard", "/dispute/new"];
+  const shouldHideLayout = hideLayoutRoutes.some(path => location.pathname.startsWith(path));
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -51,11 +55,13 @@ const App = () => {
         </div>
       )}
 
-      <Navbar
-        onLoginClick={() => setAuthMode("signin")}
-        onSignupClick={() => setAuthMode("signup")}
-        user={user}
-      />
+      {!shouldHideLayout && (
+        <Navbar
+          onLoginClick={() => setAuthMode("signin")}
+          onSignupClick={() => setAuthMode("signup")}
+          user={user}
+        />
+      )}
 
       <Routes>
         <Route
@@ -71,7 +77,7 @@ const App = () => {
         ></Route>
       </Routes>
       <ScrollToTop />
-      <Footer />
+      {!shouldHideLayout && <Footer />}
 
       {/* Auth modal — shown when authMode is set and user is NOT logged in */}
       {authMode && !user && (
