@@ -10,24 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import CreateDispute from "./pages/CreateDispute";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
-
-// Infer the exact user type from the useAuth hook
-type UserType = ReturnType<typeof useAuth>['user'];
-
-// Wraps routes that require authentication
-const ProtectedRoute = ({
-  user,
-  loading,
-  children,
-}: {
-  user: UserType;        //  matches whatever useAuth returns (null or User object)
-  loading: boolean;
-  children: React.ReactNode;
-}) => {
-  if (loading) return null;
-  if (!user) return <Navigate to="/" replace />;
-  return <>{children}</>;
-};
+import { paths } from "../utils/paths";
+import InitializeDisputePage from "./pages/Initialize";
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -79,27 +63,13 @@ const App = () => {
           element={<Home onGetStarted={() => setAuthMode("signup")} />}
         />
         <Route path="/about" element={<AboutADR />} />
-
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dispute/new" element={<CreateDispute />} />
         <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute user={user} loading={loading}>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dispute/new"
-          element={
-            <ProtectedRoute user={user} loading={loading}>
-              <CreateDispute />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route path="*" element={<Navigate to="/" replace />} />
+          path={paths.initialize}
+          element={<InitializeDisputePage />}
+        ></Route>
       </Routes>
-
       <ScrollToTop />
       <Footer />
 
@@ -118,7 +88,10 @@ const App = () => {
               >
                 ✕
               </button>
-              <Auth onSuccess={() => setAuthMode(null)} initialMode={authMode} />
+              <Auth
+                onSuccess={() => setAuthMode(null)}
+                initialMode={authMode}
+              />
             </div>
           </div>
         </>
