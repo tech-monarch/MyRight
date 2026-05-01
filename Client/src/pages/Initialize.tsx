@@ -38,12 +38,12 @@ export default function InitializeDisputePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
+      <div className="max-w-5xl mx-auto">
         <PageHeader />
-        <div className="flex gap-6">
-          {/* Left column */}
-          <div className="flex-1">
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+        
+          <div className="flex-1 w-full">
             <DisputeCategorySelect
               onChange={(val) => setForm((prev) => ({ ...prev, category: val }))}
             />
@@ -61,7 +61,7 @@ export default function InitializeDisputePage() {
           </div>
 
           {/* Right column */}
-          <div className="w-72 shrink-0">
+          <div className="w-full lg:w-72 shrink-0">
             <AnalysisTipsCard />
             <ProcessTimeline />
           </div>

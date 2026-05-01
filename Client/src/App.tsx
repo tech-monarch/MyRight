@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useAuth } from "./hooks/useAuth";
 import Auth from "./components/Auth";
@@ -21,6 +21,7 @@ const App = () => {
   } = useRegisterSW();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // controls auth modal and its mode
+  const navigate = useNavigate();
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -62,9 +63,9 @@ const App = () => {
           path="/"
           element={<Home onGetStarted={() => setAuthMode("signup")} />}
         />
-        <Route path="/about" element={<AboutADR />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dispute/new" element={<CreateDispute />} />
+        <Route path={paths.about} element={<AboutADR />} />
+        <Route path={paths.dashboard} element={<Dashboard />} />
+        <Route path={paths.disputeNew} element={<CreateDispute />} />
         <Route
           path={paths.initialize}
           element={<InitializeDisputePage />}
@@ -89,7 +90,10 @@ const App = () => {
                 ✕
               </button>
               <Auth
-                onSuccess={() => setAuthMode(null)}
+                onSuccess={() => {
+                  setAuthMode(null);
+                  navigate(paths.dashboard);
+                }}
                 initialMode={authMode}
               />
             </div>

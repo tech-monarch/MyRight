@@ -23,7 +23,7 @@ export default function DisputeCategorySelect({ onChange }: DisputeCategorySelec
 
   return (
     <div className="border border-gray-200 rounded-xl p-4 mb-4">
-      <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest block mb-2">
+      <label className="text-xs font-semibold text-primary-navy uppercase tracking-wide block mb-2">
         Dispute Category
       </label>
       <select

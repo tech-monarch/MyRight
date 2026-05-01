@@ -22,7 +22,7 @@ export default function ProcessTimeline() {
             <div className="flex flex-col items-center">
               <div
                 className={`w-3 h-3 rounded-full mt-0.5 shrink-0 ${
-                  step.active ? "bg-blue-600" : "bg-gray-200"
+                  step.active ? "bg-primary-navy" : "bg-gray-200"
                 }`}
               />
               {i < STEPS.length - 1 && (
