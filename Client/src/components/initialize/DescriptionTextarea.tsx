@@ -1,6 +1,6 @@
 import { useState} from "react";
 import type { ChangeEvent } from "react";
-// import { Paperclip, Mic } from "lucide-react";
+import { Paperclip, Mic } from "lucide-react";
 
 const MIN_CHARS = 150;
 
@@ -38,10 +38,10 @@ export default function DescriptionTextarea({ onChange }: DescriptionTextareaPro
       />
       <div className="flex justify-end gap-3 mt-2 border-t border-gray-100 pt-2">
         <button type="button" aria-label="Attach file" className="text-gray-400 hover:text-gray-600">
-          {/* <Paperclip size={16} /> */}
+          <Paperclip size={16} />
         </button>
         <button type="button" aria-label="Voice input" className="text-gray-400 hover:text-gray-600">
-          {/* <Mic size={16} /> */}
+          <Mic size={16} />
         </button>
       </div>
     </div>

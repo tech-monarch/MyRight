@@ -1,4 +1,4 @@
-// `import { Target } from "lucide-react";`
+import { Target } from "lucide-react";
 
 interface Tip {
   text: string;
@@ -14,7 +14,7 @@ export default function AnalysisTipsCard() {
   return (
     <div className="border border-gray-200 rounded-xl p-4 mb-4">
       <div className="flex items-center gap-2 mb-3">
-        {/* <Target size={14} className="text-gray-500" /> */}
+        <Target size={14} className="text-gray-500" />
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
           Analysis Tips
         </span>

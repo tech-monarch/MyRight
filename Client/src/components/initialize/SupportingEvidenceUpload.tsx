@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
-import type { DragEvent, ChangeEvent } from "react";
-// import { UploadCloud, X } from "lucide-react";
+import { useRef, useState} from "react";
+import type {  DragEvent, ChangeEvent } from 'react'
+import { UploadCloud, X } from "lucide-react";
 
 const ACCEPTED = ".pdf,.jpg,.png";
 const MAX_MB = 10;
@@ -81,7 +81,7 @@ export default function SupportingEvidenceUpload({ onFilesChange }: SupportingEv
         className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer
           ${dragging ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-gray-50"}`}
       >
-        {/* <UploadCloud size={28} className="text-gray-400" /> */}
+        <UploadCloud size={28} className="text-gray-400" />
         <p className="text-sm text-gray-500">
           Drag &amp; drop files or{" "}
           <span className="text-blue-600 underline">browse</span>
@@ -112,7 +112,7 @@ export default function SupportingEvidenceUpload({ onFilesChange }: SupportingEv
                   className="text-gray-400 hover:text-red-500"
                   aria-label={`Remove ${f.name}`}
                 >
-                  {/* <X size={12} /> */}
+                  <X size={12} />
                 </button>
               </div>
             </li>
