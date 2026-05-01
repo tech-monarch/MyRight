@@ -34,6 +34,7 @@ const Auth = ({ onSuccess, initialMode = "signin" }: AuthProps) => {
         if (error) throw error;
         onSuccess(); // close modal on successful login
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message);
     } finally {

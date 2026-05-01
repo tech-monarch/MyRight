@@ -4,6 +4,8 @@ import {
   RiFileList3Line,
   RiArrowRightLine,
 } from "react-icons/ri";
+import { Link } from "react-router-dom";
+import { useChatStore } from "../../store";
 import type { Dispute } from "../../types/types";
 
 interface ActiveDisputesListProps {
@@ -13,6 +15,8 @@ interface ActiveDisputesListProps {
 export default function ActiveDisputesList({
   disputes,
 }: ActiveDisputesListProps) {
+  const resetChat = useChatStore((state) => state.resetChat);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -87,19 +91,22 @@ export default function ActiveDisputesList({
             You have no ongoing cases. Start the resolution process and let
             MyRight guide you.
           </p>
-          <button className="text-xs font-bold uppercase tracking-widest bg-(--color-primary-navy) text-white px-6 py-3 rounded-md hover:bg-(--color-primary-blue) transition-colors duration-150">
+          <Link
+            to="/dispute/new"
+            onClick={() => resetChat()}
+            className="text-xs font-bold uppercase tracking-widest bg-(--color-primary-navy) text-white px-6 py-3 rounded-md hover:bg-(--color-primary-blue) transition-colors duration-150"
+          >
             Start New Dispute
-          </button>
+          </Link>
         </div>
       )}
     </div>
   );
 }
 
-const statusConfig: Record<Dispute["status"], { label: string; dot: string }> =
-  {
-    "In Mediation": { label: "In Mediation", dot: "bg-(--color-primary-blue)" },
-    "AI Assessment": { label: "AI Assessment", dot: "bg-violet-500" },
-    "Invited Party": { label: "Invited Party", dot: "bg-amber-500" },
-    Resolved: { label: "Resolved", dot: "bg-emerald-500" },
-  };
+const statusConfig: Record<Dispute["status"], { label: string; dot: string }> = {
+  "In Mediation": { label: "In Mediation", dot: "bg-(--color-primary-blue)" },
+  "AI Assessment": { label: "AI Assessment", dot: "bg-violet-500" },
+  "Invited Party": { label: "Invited Party", dot: "bg-amber-500" },
+  Resolved: { label: "Resolved", dot: "bg-emerald-500" },
+};
