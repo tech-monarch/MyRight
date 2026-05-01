@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
-import { useRegisterSW } from "virtual:pwa-register/react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useAuth } from "./hooks/useAuth";
 import Auth from "./components/Auth";
 import Navbar from "./components/Navbar";
@@ -20,7 +20,7 @@ const App = () => {
     updateServiceWorker,
   } = useRegisterSW();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // 👈 controls auth modal and its mode
+  const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // controls auth modal and its mode
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -32,6 +32,8 @@ const App = () => {
       window.removeEventListener("online", goOnline);
     };
   }, []);
+
+  // No need for an effect to clear authMode – the modal's render condition already hides it when user exists
 
   if (loading) {
     return (
@@ -49,7 +51,6 @@ const App = () => {
         </div>
       )}
 
-      {/* Always show landing page */}
       <Navbar
         onLoginClick={() => setAuthMode("signin")}
         onSignupClick={() => setAuthMode("signup")}
@@ -71,7 +72,8 @@ const App = () => {
       </Routes>
       <ScrollToTop />
       <Footer />
-      {/* Auth modal — shown when authMode is true and user is not logged in */}
+
+      {/* Auth modal — shown when authMode is set and user is NOT logged in */}
       {authMode && !user && (
         <>
           <div
@@ -80,7 +82,6 @@ const App = () => {
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="relative w-full max-w-md">
-              {/* Close button */}
               <button
                 onClick={() => setAuthMode(null)}
                 className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow flex items-center justify-center text-gray-500 hover:text-gray-800 z-10"
@@ -96,7 +97,7 @@ const App = () => {
         </>
       )}
 
-      {/* Update modal */}
+      {/* PWA update modal */}
       {needRefresh && (
         <>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />

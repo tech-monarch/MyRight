@@ -3,7 +3,7 @@ import {
   RiMessage3Line,
   RiCheckDoubleLine,
 } from "react-icons/ri";
-import type { DashboardStats } from "../../../types/types";
+import type { DashboardStats } from "../../types/types";
 
 interface StatCardsProps {
   stats: DashboardStats;
