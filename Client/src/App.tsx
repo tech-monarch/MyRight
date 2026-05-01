@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react"
-import { Routes, Route } from "react-router-dom"
-import { useRegisterSW } from 'virtual:pwa-register/react'
-import { useAuth } from "./hooks/useAuth"
-import Auth from "./components/Auth"
-import Navbar from "./components/Navbar"
-import Home from "./pages/Home"
-import AboutADR from "./pages/AboutADR"
-import Dashboard from "./pages/Dashboard"
-import CreateDispute from "./pages/CreateDispute"
-import Footer from "./components/Footer"
-import ScrollToTop from "./components/ScrollToTop"
+import { useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
+import { useRegisterSW } from "virtual:pwa-register/react";
+import { useAuth } from "./hooks/useAuth";
+import Auth from "./components/Auth";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import AboutADR from "./pages/AboutADR";
+import Dashboard from "./pages/Dashboard";
+import CreateDispute from "./pages/CreateDispute";
+import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
+import { paths } from "../utils/paths";
+import InitializeDisputePage from "./pages/Initialize";
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -48,7 +50,11 @@ const App = () => {
       )}
 
       {/* Always show landing page */}
-      <Navbar onLoginClick={() => setAuthMode("signin")} onSignupClick={() => setAuthMode("signup")} user={user} />
+      <Navbar
+        onLoginClick={() => setAuthMode("signin")}
+        onSignupClick={() => setAuthMode("signup")}
+        user={user}
+      />
 
       <Routes>
         <Route
@@ -58,8 +64,12 @@ const App = () => {
         <Route path="/about" element={<AboutADR />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dispute/new" element={<CreateDispute />} />
+        <Route
+          path={paths.initialize}
+          element={<InitializeDisputePage />}
+        ></Route>
       </Routes>
-      <ScrollToTop/>
+      <ScrollToTop />
       <Footer />
       {/* Auth modal — shown when authMode is true and user is not logged in */}
       {authMode && !user && (
@@ -77,7 +87,10 @@ const App = () => {
               >
                 ✕
               </button>
-              <Auth onSuccess={() => setAuthMode(null)} initialMode={authMode} />
+              <Auth
+                onSuccess={() => setAuthMode(null)}
+                initialMode={authMode}
+              />
             </div>
           </div>
         </>
