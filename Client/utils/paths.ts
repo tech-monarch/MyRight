@@ -6,4 +6,7 @@ export const paths = {
   initialize: "/initialize",
   // disputes: "/disputes",
   resolution: "/resolution",
+  mediation: "/mediation",
+  mediationSuccess: "/mediation/success",
+  caseDetails: "/disputes/:id",
 };

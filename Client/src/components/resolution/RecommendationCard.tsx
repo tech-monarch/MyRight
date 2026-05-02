@@ -1,4 +1,6 @@
 import { CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { paths } from "../../../utils/paths";
 
 export default function RecommendationCard() {
   return (
@@ -15,20 +17,26 @@ export default function RecommendationCard() {
         <h2 className="text-4xl md:text-[42px] font-medium text-primary-navy mb-4 tracking-tight">
           Arbitration
         </h2>
-        
+
         <p className="text-[15px] text-gray-600 leading-relaxed mb-8 max-w-md">
           This type of dispute is best resolved through arbitration. Arbitration
-          offers a confidential, flexible, and structured process where a neutral
-          third party helps you reach a mutually beneficial agreement.
+          offers a confidential, flexible, and structured process where a
+          neutral third party helps you reach a mutually beneficial agreement.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <button className="bg-primary-navy text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-blue-900 transition-colors">
+          <Link
+            to={paths.mediation}
+            className="bg-primary-navy text-white px-6 py-3 rounded-lg text-sm font-semibold hover:bg-blue-900 transition-colors"
+          >
             Start Arbitration
-          </button>
-          <button className="bg-white text-primary-navy px-6 py-3 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm">
+          </Link>
+          <Link
+            to={paths.disputeNew}
+            className="bg-white text-primary-navy px-6 py-3 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+          >
             View Other Options
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -41,12 +49,14 @@ export default function RecommendationCard() {
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-primary-navy/40 mix-blend-multiply"></div>
-        
+
         {/* Glassmorphism Overlay */}
         <div className="absolute inset-0 flex items-center justify-center p-6">
           <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl w-full max-w-[280px] text-white shadow-xl">
             <CheckCircle className="w-6 h-6 mb-4 text-white" />
-            <div className="text-lg font-bold mb-2 tracking-wide">92% Success Rate</div>
+            <div className="text-lg font-bold mb-2 tracking-wide">
+              92% Success Rate
+            </div>
             <p className="text-[11px] leading-relaxed text-gray-200">
               Similar cases in the Lagos Multi-Door Courthouse were resolved
               within 14 days using this method.

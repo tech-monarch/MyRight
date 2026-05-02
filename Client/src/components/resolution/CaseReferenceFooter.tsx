@@ -2,7 +2,7 @@ import { Printer, Share2 } from "lucide-react";
 
 export default function CaseReferenceFooter() {
   return (
-    <div className="bg-[#e9ecef]/50 p-6 md:p-8 rounded-2xl flex flex-col md:flex-row items-center gap-6 md:gap-12 text-sm mt-8">
+    <div className="bg-bg-light-gray p-6 md:p-8 rounded-2xl flex flex-col md:flex-row items-center gap-6 md:gap-12 text-sm mt-8">
       <div className="flex flex-col shrink-0">
         <span className="text-[10px] font-bold text-gray-500 tracking-widest uppercase mb-1">
           Case Reference
