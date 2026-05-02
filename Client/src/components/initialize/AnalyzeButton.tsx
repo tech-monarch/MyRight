@@ -1,5 +1,6 @@
 import { Lock } from "lucide-react";
-
+import { Link } from "react-router-dom";
+import { paths } from "../../../utils/paths";
 interface AnalyzeButtonProps {
   onClick?: () => void;
   disabled?: boolean;
@@ -17,14 +18,16 @@ export default function AnalyzeButton({
         <Lock size={12} />
         <span>End-to-end encrypted &amp; private</span>
       </div>
-      <button
+      
+      <Link
+       to={paths.resolution}
         type="button"
         onClick={onClick}
-        disabled={disabled || loading}
+        
         className="w-full sm:w-auto bg-primary-navy hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
       >
         {loading ? "Analyzing..." : "Analyze Dispute"}
-      </button>
+      </Link>
     </div>
   );
 }

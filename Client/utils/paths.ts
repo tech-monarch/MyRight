@@ -4,5 +4,6 @@ export const paths = {
   dashboard: "/dashboard",
   disputeNew: "/dispute/new",
   initialize: "/initialize",
-  disputes: "/disputes",
+  // disputes: "/disputes",
+  resolution: "/resolution",
 };

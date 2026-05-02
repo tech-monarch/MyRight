@@ -12,6 +12,7 @@ import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
 import { paths } from "../utils/paths";
 import InitializeDisputePage from "./pages/Initialize";
+import Resolution from "./pages/Resolution";
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -70,6 +71,7 @@ const App = () => {
           path={paths.initialize}
           element={<InitializeDisputePage />}
         ></Route>
+        <Route path={paths.resolution} element={<Resolution />} />
       </Routes>
       <ScrollToTop />
       <Footer />
