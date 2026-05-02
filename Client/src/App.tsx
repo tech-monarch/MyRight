@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useRegisterSW } from 'virtual:pwa-register/react';
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useRegisterSW } from "virtual:pwa-register/react";
 import { useAuth } from "./hooks/useAuth";
 import Auth from "./components/Auth";
 import Navbar from "./components/Navbar";
@@ -10,24 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import CreateDispute from "./pages/CreateDispute";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
-
-// Infer the exact user type from the useAuth hook
-type UserType = ReturnType<typeof useAuth>['user'];
-
-// Wraps routes that require authentication
-const ProtectedRoute = ({
-  user,
-  loading,
-  children,
-}: {
-  user: UserType;        //  matches whatever useAuth returns (null or User object)
-  loading: boolean;
-  children: React.ReactNode;
-}) => {
-  if (loading) return null;
-  if (!user) return <Navigate to="/" replace />;
-  return <>{children}</>;
-};
+import { paths } from "../utils/paths";
+import InitializeDisputePage from "./pages/Initialize";
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -37,10 +21,7 @@ const App = () => {
   } = useRegisterSW();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // controls auth modal and its mode
-  const location = useLocation();
-
-  const hideLayoutRoutes = ["/dashboard", "/dispute/new"];
-  const shouldHideLayout = hideLayoutRoutes.some(path => location.pathname.startsWith(path));
+  const navigate = useNavigate();
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -71,43 +52,27 @@ const App = () => {
         </div>
       )}
 
-      {!shouldHideLayout && (
-        <Navbar
-          onLoginClick={() => setAuthMode("signin")}
-          onSignupClick={() => setAuthMode("signup")}
-          user={user}
-        />
-      )}
+      <Navbar
+        onLoginClick={() => setAuthMode("signin")}
+        onSignupClick={() => setAuthMode("signup")}
+        user={user}
+      />
 
       <Routes>
         <Route
           path="/"
           element={<Home onGetStarted={() => setAuthMode("signup")} />}
         />
-        <Route path="/about" element={<AboutADR />} />
-
+        <Route path={paths.about} element={<AboutADR />} />
+        <Route path={paths.dashboard} element={<Dashboard />} />
+        <Route path={paths.disputeNew} element={<CreateDispute />} />
         <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute user={user} loading={loading}>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dispute/new"
-          element={
-            <ProtectedRoute user={user} loading={loading}>
-              <CreateDispute />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route path="*" element={<Navigate to="/" replace />} />
+          path={paths.initialize}
+          element={<InitializeDisputePage />}
+        ></Route>
       </Routes>
-
       <ScrollToTop />
-      {!shouldHideLayout && <Footer />}
+      <Footer />
 
       {/* Auth modal — shown when authMode is set and user is NOT logged in */}
       {authMode && !user && (
@@ -124,7 +89,13 @@ const App = () => {
               >
                 ✕
               </button>
-              <Auth onSuccess={() => setAuthMode(null)} initialMode={authMode} />
+              <Auth
+                onSuccess={() => {
+                  setAuthMode(null);
+                  navigate(paths.dashboard);
+                }}
+                initialMode={authMode}
+              />
             </div>
           </div>
         </>

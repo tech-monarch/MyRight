@@ -2,7 +2,7 @@ import { useState } from "react";
 import { RiMenu3Line, RiCloseLine, RiSearchLine } from "react-icons/ri";
 import { Link } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
-
+import { paths } from "../../utils/paths";
 interface NavbarProps {
   onLoginClick: () => void
   onSignupClick: () => void
@@ -22,12 +22,12 @@ const Navbar = ({ onLoginClick, onSignupClick, user }: NavbarProps) => {
         <ul className="hidden md:flex list-none gap-8 m-0 p-0">
           <li>
             <Link to="/" className="text-(--color-primary-navy) text-sm font-medium transition-colors duration-200 relative pb-2 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-0.5 after:bg-(--color-primary-navy) after:rounded-full">
-              Dashboard
+              Home
             </Link>
           </li>
           <li>
-            <Link to="#" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
-              Mediation
+            <Link to="/dispute" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
+             Dispute
             </Link>
           </li>
           <li>
@@ -39,14 +39,7 @@ const Navbar = ({ onLoginClick, onSignupClick, user }: NavbarProps) => {
 
         {/* Desktop right side */}
         <div className="hidden md:flex items-center gap-4">
-          <div className="flex items-center bg-(--color-bg-off-white) rounded-lg px-4 py-2 gap-2">
-            <RiSearchLine className="text-(--color-text-muted) w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search Case"
-              className="border-none bg-transparent outline-none text-[13px] text-(--color-text-main) w-27.5 placeholder:text-(--color-text-muted)"
-            />
-          </div>
+         
           {user ? (
             <button className="bg-(--color-primary-navy) text-(--color-bg-white) rounded-md px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity">
               Dashboard
@@ -97,7 +90,7 @@ const Navbar = ({ onLoginClick, onSignupClick, user }: NavbarProps) => {
 
           <ul className="flex flex-col list-none gap-1 m-0 p-0">
             <li><Link to="/" className="block py-2.5 text-sm font-semibold text-(--color-primary-navy)">Dashboard</Link></li>
-            <li><Link to="/mediation" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">Mediation</Link></li>
+            <li><Link to={paths.initialize} className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">Dispute</Link></li>
             <li><Link to="/about" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">About ADR</Link></li>
           </ul>
 
