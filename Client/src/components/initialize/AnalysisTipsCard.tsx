@@ -23,7 +23,7 @@ export default function AnalysisTipsCard() {
       <ul className="space-y-3">
         {TIPS.map((tip, i) => (
           <li key={i} className="flex gap-2 items-start">
-            <span className="mt-0.5 w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center shrink-0 font-bold">
+            <span className="mt-0.5 w-4 h-4 rounded-full bg-primary-navy text-white text-[10px] flex items-center justify-center shrink-0 font-bold">
               {i + 1}
             </span>
             <p className="text-xs text-gray-600 leading-relaxed">{tip.text}</p>

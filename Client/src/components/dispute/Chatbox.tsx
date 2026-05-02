@@ -1,8 +1,8 @@
 import { useRef, useEffect } from "react";
-import ChatMessage from "../dispute/ChatMessage";
-import ChatInput from "../dispute/ChatInput";
-import ChatHeader from "../dispute/ChatHeader";
-import ChatLoadingIndicator from "../dispute/ChatLoadingIndicator";
+import ChatMessage from "./ChatMessage";
+import ChatInput from "./ChatInput";
+import ChatHeader from "./ChatHeader";
+import ChatLoadingIndicator from "./ChatLoadingIndicator";
 import { useDisputeChat } from "../../hooks/useDisputeChat";
 
 export default function Chatbox() {

@@ -68,7 +68,7 @@ export default function SupportingEvidenceUpload({ onFilesChange }: SupportingEv
 
   return (
     <div className="border border-gray-200 rounded-xl p-4 mb-4">
-      <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest block mb-3">
+      <label className="text-xs font-semibold text-primary-navy uppercase tracking-widest block mb-3">
         Supporting Evidence{" "}
         <span className="normal-case font-normal text-gray-400">(Optional)</span>
       </label>

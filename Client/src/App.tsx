@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useRegisterSW } from 'virtual:pwa-register/react';
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useRegisterSW } from "virtual:pwa-register/react";
 import { useAuth } from "./hooks/useAuth";
 import Auth from "./components/Auth";
 import Navbar from "./components/Navbar";
@@ -21,10 +21,7 @@ const App = () => {
   } = useRegisterSW();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // controls auth modal and its mode
-  const location = useLocation();
-
-  const hideLayoutRoutes = ["/dashboard", "/dispute/new"];
-  const shouldHideLayout = hideLayoutRoutes.some(path => location.pathname.startsWith(path));
+  const navigate = useNavigate();
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -55,29 +52,27 @@ const App = () => {
         </div>
       )}
 
-      {!shouldHideLayout && (
-        <Navbar
-          onLoginClick={() => setAuthMode("signin")}
-          onSignupClick={() => setAuthMode("signup")}
-          user={user}
-        />
-      )}
+      <Navbar
+        onLoginClick={() => setAuthMode("signin")}
+        onSignupClick={() => setAuthMode("signup")}
+        user={user}
+      />
 
       <Routes>
         <Route
           path="/"
           element={<Home onGetStarted={() => setAuthMode("signup")} />}
         />
-        <Route path="/about" element={<AboutADR />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/dispute/new" element={<CreateDispute />} />
+        <Route path={paths.about} element={<AboutADR />} />
+        <Route path={paths.dashboard} element={<Dashboard />} />
+        <Route path={paths.disputeNew} element={<CreateDispute />} />
         <Route
           path={paths.initialize}
           element={<InitializeDisputePage />}
         ></Route>
       </Routes>
       <ScrollToTop />
-      {!shouldHideLayout && <Footer />}
+      <Footer />
 
       {/* Auth modal — shown when authMode is set and user is NOT logged in */}
       {authMode && !user && (
@@ -95,7 +90,10 @@ const App = () => {
                 ✕
               </button>
               <Auth
-                onSuccess={() => setAuthMode(null)}
+                onSuccess={() => {
+                  setAuthMode(null);
+                  navigate(paths.dashboard);
+                }}
                 initialMode={authMode}
               />
             </div>
