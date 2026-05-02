@@ -28,12 +28,13 @@ const Auth = ({ onSuccess, initialMode = "signin" }: AuthProps) => {
       if (mode === "signup") {
         const { error } = await signUp(email, password, name);
         if (error) throw error;
-        setSuccess("Check your email to confirm your account!");
+        onSuccess();
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
         onSuccess(); // close modal on successful login
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message);
     } finally {

@@ -1,37 +1,39 @@
-import { useState, useRef, useEffect } from "react";
-import type { DisputeFormData, AIPhase, AIMessageProps, DisputeCategory } from "../types/types";
+import { useEffect, useRef } from "react";
 import DisputeSubmittedCard from "../components/dispute/DisputeSubmittedCard";
 import { api } from "../lib/api";
-import { createCase } from "./useDB";
+import { FALLBACK_RESPONSES, detectFallbackCategory } from "../lib/fallbacks";
 import { getDeviceLocation } from "../lib/location";
 import { supabase } from "../lib/supabase";
-import { FALLBACK_RESPONSES, detectFallbackCategory } from "../lib/fallbacks";
+import { useChatStore } from "../store";
+import type { AIMessageProps, DisputeCategory } from "../types/types";
+import { createCase } from "./useDB";
 
-// ── Types ─────────────────────────────────────────
 type GeoLocation = { lat: number; lng: number; mapsUrl: string } | undefined;
 type ChatHistoryItem = { role: string; content: string };
 
-// ── Emergency keywords ────────────────────────────
 const EMERGENCY_KEYWORDS = [
-  "help", "police", "threat", "gun", "knife", "danger", "attack", "kill", "abuse"
+  "help",
+  "police",
+  "threat",
+  "gun",
+  "knife",
+  "danger",
+  "attack",
+  "kill",
+  "abuse",
 ];
 const isEmergency = (text: string) =>
   EMERGENCY_KEYWORDS.some((kw) => text.toLowerCase().includes(kw));
-
-// ── Helpers ───────────────────────────────────────
-const INITIAL_FORM: DisputeFormData = {
-  category: "Other",
-  description: "",
-  opponentName: "",
-  opponentContact: "",
-  attachments: [],
-};
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 // ── Modal Component (defined OUTSIDE hook) ─────────
 // eslint-disable-next-line react-refresh/only-export-components
-function DisputeFormModal({ isOpen, onClose, onSubmit }: {
+function DisputeFormModal({
+  isOpen,
+  onClose,
+  onSubmit,
+}: {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: {
@@ -54,13 +56,23 @@ function DisputeFormModal({ isOpen, onClose, onSubmit }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6">
-          <h2 className="text-xl font-bold text-(--color-primary-navy) mb-4">Dispute Details</h2>
+          <h2 className="text-xl font-bold text-(--color-primary-navy) mb-4">
+            Dispute Details
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-bold mb-1">Opponent Name</label>
+              <label className="block text-sm font-bold mb-1">
+                Opponent Name
+              </label>
               <input
                 type="text"
                 value={opponentName}
@@ -70,7 +82,9 @@ function DisputeFormModal({ isOpen, onClose, onSubmit }: {
               />
             </div>
             <div>
-              <label className="block text-sm font-bold mb-1">Opponent Contact (phone/email/address)</label>
+              <label className="block text-sm font-bold mb-1">
+                Opponent Contact (phone/email/address)
+              </label>
               <input
                 type="text"
                 value={opponentContact}
@@ -90,21 +104,29 @@ function DisputeFormModal({ isOpen, onClose, onSubmit }: {
                 <option value="Business/Contract">Business/Contract</option>
                 <option value="Employment">Employment</option>
                 <option value="Consumer/Retail">Consumer/Retail</option>
-                <option value="Property/Real Estate">Property/Real Estate</option>
+                <option value="Property/Real Estate">
+                  Property/Real Estate
+                </option>
                 <option value="Debt/Finance">Debt/Finance</option>
                 <option value="Neighbour">Neighbour</option>
                 <option value="Other">Other</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-bold mb-1">Evidence (optional)</label>
+              <label className="block text-sm font-bold mb-1">
+                Evidence (optional)
+              </label>
               <input
                 type="file"
                 multiple
-                onChange={(e) => setAttachments(Array.from(e.target.files || []))}
+                onChange={(e) =>
+                  setAttachments(Array.from(e.target.files || []))
+                }
                 className="w-full"
               />
-              <p className="text-xs text-(--color-text-muted) mt-1">Photos, receipts, messages, or contracts</p>
+              <p className="text-xs text-(--color-text-muted) mt-1">
+                Photos, receipts, messages, or contracts
+              </p>
             </div>
             <div className="flex gap-3 pt-4">
               <button
@@ -128,16 +150,26 @@ function DisputeFormModal({ isOpen, onClose, onSubmit }: {
   );
 }
 
+import { useState } from "react";
+
 // ── Hook ──────────────────────────────────────────
 export function useDisputeChat() {
-  const [phase, setPhase] = useState<AIPhase>("GREETING");
-  const [messages, setMessages] = useState<AIMessageProps[]>([]);
-  const [form, setForm] = useState<DisputeFormData>(INITIAL_FORM);
-  const [showFormModal, setShowFormModal] = useState(false);
+  const {
+    messages,
+    form,
+    phase,
+    chatHistory,
+    sessionId,
+    setMessages,
+    setForm,
+    setPhase,
+    setChatHistory,
+    setSessionId,
+    resetChat,
+  } = useChatStore();
 
-  const chatHistory = useRef<ChatHistoryItem[]>([]);
+  const [showFormModal, setShowFormModal] = useState(false);
   const hasInitialized = useRef(false);
-  const sessionId = useRef<number | null>(null);
 
   const saveSession = async (
     msgs: AIMessageProps[],
@@ -153,9 +185,9 @@ export function useDisputeChat() {
         messages: serializable,
         category,
         urgency,
-        sessionId: sessionId.current || undefined,
+        sessionId: sessionId || undefined,
       });
-      if (result.session?.id) sessionId.current = result.session.id;
+      if (result.session?.id) setSessionId(result.session.id);
     } catch (err) {
       console.error("saveSession failed:", err);
     }
@@ -165,7 +197,7 @@ export function useDisputeChat() {
     text: string,
     location?: GeoLocation,
     history?: ChatHistoryItem[],
-    mode: 'chat' | 'analyze' = 'analyze',
+    mode: "chat" | "analyze" = "analyze",
   ) => {
     try {
       return await api.disputes.analyze(text, location, history, mode);
@@ -187,16 +219,21 @@ export function useDisputeChat() {
     setMessages((prev) => [...prev, { role: "ai", content, animate: true }]);
   };
   const addToHistory = (role: string, content: string) => {
-    chatHistory.current.push({ role, content });
+    setChatHistory((prev) => [...prev, { role, content }]);
   };
 
   // ── Init ─────────────────────────────────────────
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
+
+    // Only run initial greeting if we don't have saved messages
+    if (messages.length > 0) return;
+
     (async () => {
       await delay(500);
-      const greeting = "Hello! I'm your MyRight AI guide. Tell me what's going on.";
+      const greeting =
+        "Hello! I'm your MyRight AI guide. Tell me what's going on.";
       addAIMessage(greeting);
       addToHistory("ai", greeting);
       setPhase("INTAKE");
@@ -222,11 +259,15 @@ export function useDisputeChat() {
     if (data.attachments.length) {
       try {
         await api.documents.upload(data.attachments);
-      } catch (err) { console.error("Upload error:", err); }
+      } catch (err) {
+        console.error("Upload error:", err);
+      }
     }
 
     setPhase("CLARIFYING_WAIT");
-    const location = (await getDeviceLocation().catch(() => undefined)) as GeoLocation;
+    const location = (await getDeviceLocation().catch(
+      () => undefined,
+    )) as GeoLocation;
     const clarificationPrompt = `The user is filing a dispute. Details:
 Description: ${form.description}
 Opponent: ${data.opponentName} (${data.opponentContact})
@@ -234,24 +275,47 @@ Category: ${data.category}
 Number of files: ${data.attachments.length}
 
 Ask up to two short, relevant clarifying questions (e.g., timeline, evidence, witnesses). Keep it friendly, max 40 words. End with a question.`;
-    const analysis = await analyzeWithFallback(clarificationPrompt, location, chatHistory.current, 'analyze');
+    const analysis = await analyzeWithFallback(
+      clarificationPrompt,
+      location,
+      chatHistory,
+      "analyze",
+    );
     addAIMessage(analysis.aiResponse);
     addToHistory("ai", analysis.aiResponse);
-    await saveSession([...messages, { role: "user", content: "Form submitted", animate: true }, { role: "ai", content: analysis.aiResponse }], data.category, "medium");
+    await saveSession(
+      [
+        ...messages,
+        { role: "user", content: "Form submitted", animate: true },
+        { role: "ai", content: analysis.aiResponse },
+      ],
+      data.category,
+      "medium",
+    );
   };
 
   // ── Main message handler ─────────────────────────
   const handleSend = async (text: string) => {
-    const userMsg: AIMessageProps = { role: "user", content: text, animate: true };
+    const userMsg: AIMessageProps = {
+      role: "user",
+      content: text,
+      animate: true,
+    };
     setMessages((prev) => [...prev, userMsg]);
     addToHistory("user", text);
 
     if (isEmergency(text)) {
       setPhase("ANALYZING");
-      const location = (await getDeviceLocation().catch(() => undefined)) as GeoLocation;
-      const analysis = await analyzeWithFallback(text, location, chatHistory.current);
+      const location = (await getDeviceLocation().catch(
+        () => undefined,
+      )) as GeoLocation;
+      const analysis = await analyzeWithFallback(text, location, chatHistory);
       addAIMessage(analysis.aiResponse);
-      await saveSession([...messages, userMsg, { role: "ai", content: analysis.aiResponse }], analysis.category, analysis.urgency);
+      await saveSession(
+        [...messages, userMsg, { role: "ai", content: analysis.aiResponse }],
+        analysis.category,
+        analysis.urgency,
+      );
       setPhase("INTAKE");
       return;
     }
@@ -259,19 +323,28 @@ Ask up to two short, relevant clarifying questions (e.g., timeline, evidence, wi
     if (phase === "INTAKE") {
       setForm((prev) => ({ ...prev, description: text }));
       setPhase("ANALYZING");
-      const location = (await getDeviceLocation().catch(() => undefined)) as GeoLocation;
-      const analysis = await analyzeWithFallback(text, location, chatHistory.current);
+      const location = (await getDeviceLocation().catch(
+        () => undefined,
+      )) as GeoLocation;
+      const analysis = await analyzeWithFallback(text, location, chatHistory);
       const reply = analysis.aiResponse;
       addAIMessage(reply);
       addToHistory("ai", reply);
-      await saveSession([...messages, userMsg, { role: "ai", content: reply }], analysis.category, analysis.urgency);
+      await saveSession(
+        [...messages, userMsg, { role: "ai", content: reply }],
+        analysis.category,
+        analysis.urgency,
+      );
       setShowFormModal(true);
+      setPhase("INTAKE"); // Reset phase so loading stops
       return;
     }
 
     if (phase === "CLARIFYING_WAIT") {
       setPhase("ANALYZING");
-      const location = (await getDeviceLocation().catch(() => undefined)) as GeoLocation;
+      const location = (await getDeviceLocation().catch(
+        () => undefined,
+      )) as GeoLocation;
       const summaryPrompt = `User's dispute details:
 Description: ${form.description}
 Opponent: ${form.opponentName} (${form.opponentContact})
@@ -279,10 +352,19 @@ Category: ${form.category}
 Additional info from user: ${text}
 
 Now produce a short summary card (plain text, no markdown) with title, description, opponent details. Then ask: "Does this look correct? Type 'yes' to submit." Keep it under 60 words.`;
-      const analysis = await analyzeWithFallback(summaryPrompt, location, chatHistory.current, 'analyze');
+      const analysis = await analyzeWithFallback(
+        summaryPrompt,
+        location,
+        chatHistory,
+        "analyze",
+      );
       addAIMessage(analysis.aiResponse);
       addToHistory("ai", analysis.aiResponse);
-      await saveSession([...messages, userMsg, { role: "ai", content: analysis.aiResponse }], form.category, "medium");
+      await saveSession(
+        [...messages, userMsg, { role: "ai", content: analysis.aiResponse }],
+        form.category,
+        "medium",
+      );
       setPhase("REVIEW_WAIT");
       return;
     }
@@ -295,8 +377,12 @@ Now produce a short summary card (plain text, no markdown) with title, descripti
       setPhase("SUBMITTING");
       try {
         await api.disputes.submit(form);
-        const { data: { user } } = await supabase.auth.getUser();
-        const userId = user ? parseInt(user.id.replace(/-/g, "").slice(0, 8), 16) % 10000 : 1;
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        const userId = user
+          ? parseInt(user.id.replace(/-/g, "").slice(0, 8), 16) % 10000
+          : 1;
         await createCase({
           title: `${form.category} Dispute`,
           description: form.description,
@@ -306,10 +392,16 @@ Now produce a short summary card (plain text, no markdown) with title, descripti
         });
         setMessages((prev) => [
           ...prev,
-          { role: "ai", content: <DisputeSubmittedCard />, animate: true } as AIMessageProps,
+          {
+            role: "ai",
+            content: <DisputeSubmittedCard />,
+            animate: true,
+          } as AIMessageProps,
         ]);
         await saveSession(messages, form.category, "submitted");
         setPhase("SUCCESS");
+        // Clear store on success
+        setTimeout(() => resetChat(), 5000);
       } catch {
         addAIMessage("Submission failed. Please try again.");
         setPhase("REVIEW_WAIT");
@@ -319,7 +411,8 @@ Now produce a short summary card (plain text, no markdown) with title, descripti
   };
 
   const isLoading = phase === "ANALYZING" || phase === "SUBMITTING";
-  const isInputDisabled = phase === "GREETING" || isLoading || phase === "SUCCESS" || showFormModal;
+  const isInputDisabled =
+    phase === "GREETING" || isLoading || phase === "SUCCESS" || showFormModal;
 
   const modal = (
     <DisputeFormModal

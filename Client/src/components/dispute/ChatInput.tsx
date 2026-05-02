@@ -3,6 +3,7 @@ import { RiArrowUpLine, RiAttachment2 } from "react-icons/ri";
 
 interface ChatInputProps {
   onSend: (text: string, files?: File[]) => void;
+  onChange?: (text: string) => void;
   disabled?: boolean;
   placeholder?: string;
   autoFocus?: boolean;
@@ -10,6 +11,7 @@ interface ChatInputProps {
 
 export default function ChatInput({
   onSend,
+  onChange,
   disabled = false,
   placeholder = "Message MyRight AI...",
   autoFocus = true,
@@ -108,7 +110,10 @@ export default function ChatInput({
           <textarea
             ref={textareaRef}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              onChange?.(e.target.value);
+            }}
             onKeyDown={handleKeyDown}
             disabled={disabled}
             placeholder={disabled ? "Please wait..." : placeholder}
