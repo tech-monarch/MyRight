@@ -15,6 +15,7 @@ import InitializeDisputePage from "./pages/Initialize";
 import Resolution from "./pages/Resolution";
 import MediationRequest from "./pages/MediationRequest";
 import MediationSuccess from "./pages/MediationSuccess";
+import RequestMediator from "./pages/RequestMediator";
 import CaseDetails from "./pages/CaseDetails";
 
 const App = () => {
@@ -77,6 +78,7 @@ const App = () => {
         <Route path={paths.resolution} element={<Resolution />} />
         <Route path={paths.mediation} element={<MediationRequest />} />
         <Route path={paths.mediationSuccess} element={<MediationSuccess />} />
+        <Route path={paths.requestMediator} element={<RequestMediator />} />
         <Route path={paths.caseDetails} element={<CaseDetails />} />
       </Routes>
       <ScrollToTop />

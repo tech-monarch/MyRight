@@ -8,5 +8,6 @@ export const paths = {
   resolution: "/resolution",
   mediation: "/mediation",
   mediationSuccess: "/mediation/success",
+  requestMediator: "/request-mediator",
   caseDetails: "/disputes/:id",
 };
