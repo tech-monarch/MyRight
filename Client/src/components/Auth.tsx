@@ -5,12 +5,13 @@ type Mode = "signin" | "signup";
 
 interface AuthProps {
   onSuccess: () => void;
+  initialMode?: Mode;
 }
 
-const Auth = ({ onSuccess }: AuthProps) => {
+const Auth = ({ onSuccess, initialMode = "signin" }: AuthProps) => {
   const { signIn, signUp } = useAuth();
 
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,12 +28,13 @@ const Auth = ({ onSuccess }: AuthProps) => {
       if (mode === "signup") {
         const { error } = await signUp(email, password, name);
         if (error) throw error;
-        setSuccess("Check your email to confirm your account!");
+        onSuccess();
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
         onSuccess(); // close modal on successful login
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message);
     } finally {

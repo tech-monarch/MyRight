@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { RiMenu3Line, RiCloseLine, RiSearchLine } from "react-icons/ri";
+import { Link } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
-
+import { paths } from "../../utils/paths";
 interface NavbarProps {
   onLoginClick: () => void
+  onSignupClick: () => void
   user: User | null
 }
 
-const Navbar = ({ onLoginClick, user }: NavbarProps) => {
+const Navbar = ({ onLoginClick, onSignupClick, user }: NavbarProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -19,32 +21,20 @@ const Navbar = ({ onLoginClick, user }: NavbarProps) => {
 
         <ul className="hidden md:flex list-none gap-8 m-0 p-0">
           <li>
-            <a href="#" className="text-(--color-primary-navy) text-sm font-medium transition-colors duration-200 relative pb-2 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-0.5 after:bg-(--color-primary-navy) after:rounded-full">
-              Dashboard
-            </a>
+            <Link to="/" className="text-(--color-primary-navy) text-sm font-medium transition-colors duration-200 relative pb-2 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-full after:h-0.5 after:bg-(--color-primary-navy) after:rounded-full">
+              Home
+            </Link>
           </li>
           <li>
-            <a href="#" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
-              Mediation
-            </a>
-          </li>
-          <li>
-            <a href="#" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
+            <Link to="/about" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
               About ADR
-            </a>
+            </Link>
           </li>
         </ul>
 
         {/* Desktop right side */}
         <div className="hidden md:flex items-center gap-4">
-          <div className="flex items-center bg-(--color-bg-off-white) rounded-lg px-4 py-2 gap-2">
-            <RiSearchLine className="text-(--color-text-muted) w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search Case"
-              className="border-none bg-transparent outline-none text-[13px] text-(--color-text-main) w-27.5 placeholder:text-(--color-text-muted)"
-            />
-          </div>
+         
           {user ? (
             <button className="bg-(--color-primary-navy) text-(--color-bg-white) rounded-md px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity">
               Dashboard
@@ -58,19 +48,19 @@ const Navbar = ({ onLoginClick, user }: NavbarProps) => {
                 Log In
               </button>
               <button
-                onClick={onLoginClick}
+                onClick={onSignupClick}
                 className="bg-(--color-primary-navy) text-(--color-bg-white) rounded-md px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition-opacity"
               >
                 Get Started
               </button>
             </>
           )}
-          <div className="w-9.5 h-9.5 bg-[#e6e9ee] rounded-lg cursor-pointer" />
+          <img src="/avatar.png" alt="Profile" className="w-9.5 h-9.5 bg-[#e6e9ee] rounded-lg cursor-pointer" />
         </div>
 
         {/* Mobile right: avatar + hamburger */}
         <div className="flex md:hidden items-center gap-3">
-          <div className="w-8.5 h-8.5 bg-[#e6e9ee] rounded-lg cursor-pointer" />
+          <img src="/avatar.png" alt="Profile" className="w-8.5 h-8.5 bg-[#e6e9ee] rounded-lg cursor-pointer" />
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="text-(--color-primary-navy) p-1"
@@ -94,9 +84,9 @@ const Navbar = ({ onLoginClick, user }: NavbarProps) => {
           </div>
 
           <ul className="flex flex-col list-none gap-1 m-0 p-0">
-            <li><a href="#" className="block py-2.5 text-sm font-semibold text-(--color-primary-navy)">Dashboard</a></li>
-            <li><a href="#" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">Mediation</a></li>
-            <li><a href="#" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">About ADR</a></li>
+            <li><Link to="/" className="block py-2.5 text-sm font-semibold text-(--color-primary-navy)">Dashboard</Link></li>
+          
+            <li><Link to="/about" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">About ADR</Link></li>
           </ul>
 
           {user ? (
@@ -105,7 +95,7 @@ const Navbar = ({ onLoginClick, user }: NavbarProps) => {
             </button>
           ) : (
             <button
-              onClick={onLoginClick}
+              onClick={onSignupClick}
               className="w-full bg-(--color-primary-navy) text-(--color-bg-white) rounded-md px-5 py-3 text-sm font-semibold hover:opacity-90 transition-opacity"
             >
               Get Started

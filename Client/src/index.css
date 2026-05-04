@@ -23,10 +23,20 @@
 /* Optional: Base styles to apply these variables */
 body {
   background-color: var(--color-bg-white);
-
 }
-@theme{
-  --font-sans: 'Inter', sans-serif;
+@theme inline {
+  --color-primary-navy: #092e57;
+  --color-primary-blue: #2a61ce;
+  --color-primary-light: #e4ebfa;
+  --color-bg-white: #ffffff;
+  --color-bg-off-white: #f5f8fa;
+  --color-bg-light-gray: #e9ecef;
+  --color-text-main: #092e57;
+  --color-text-muted: #5c6c7f;
+  --color-border-light: #e2e8f0;
+}
+@theme {
+  --font-sans: "Inter", sans-serif;
 }
 
 nav {
