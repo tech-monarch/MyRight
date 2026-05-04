@@ -428,5 +428,6 @@ Now produce a short summary card (plain text, no markdown) with title, descripti
     isInputDisabled,
     isLoading,
     modal,
+    placeholder: "Message MyRight AI...", // ADD THIS
   };
 }
