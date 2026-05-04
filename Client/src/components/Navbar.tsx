@@ -2,7 +2,7 @@ import { useState } from "react";
 import { RiMenu3Line, RiCloseLine, RiSearchLine } from "react-icons/ri";
 import { Link } from "react-router-dom";
 import type { User } from "@supabase/supabase-js";
-import { paths } from "../../utils/paths";
+// import { paths } from "../../utils/paths";
 interface NavbarProps {
   onLoginClick: () => void
   onSignupClick: () => void
