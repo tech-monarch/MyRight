@@ -4,6 +4,9 @@ import FeesHeader from "../components/fees/FeesHeader";
 import FeeSchedule from "../components/fees/FeeSchedule";
 import Guarantee from "../components/fees/Guarantee";
 import RecentActivity from "../components/fees/RecentActivity";
+import FinancialStatus from "../components/fees/FinancialStatus";
+import SecurePaymentMethods from "../components/fees/SecurePaymentMethods";
+import Footer from "../components/Footer";
 
 export default function FeesAndPayments() {
   return (
@@ -21,8 +24,15 @@ export default function FeesAndPayments() {
                 </div>
             </div>
             <RecentActivity />
+            
+            {/* Added a divider to show the new design state */}
+            <div className="my-16 border-t-[3px] border-dashed border-gray-200" />
+            
+            <FinancialStatus />
+            <SecurePaymentMethods />
           </div>
         </div>
+        <Footer />
       </div>
     </div>
   );
