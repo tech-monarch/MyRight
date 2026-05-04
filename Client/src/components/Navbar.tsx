@@ -26,11 +26,6 @@ const Navbar = ({ onLoginClick, onSignupClick, user }: NavbarProps) => {
             </Link>
           </li>
           <li>
-            <Link to="/dispute" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
-             Dispute
-            </Link>
-          </li>
-          <li>
             <Link to="/about" className="text-(--color-text-muted) text-sm font-medium transition-colors duration-200 hover:text-(--color-primary-navy)">
               About ADR
             </Link>
@@ -90,7 +85,7 @@ const Navbar = ({ onLoginClick, onSignupClick, user }: NavbarProps) => {
 
           <ul className="flex flex-col list-none gap-1 m-0 p-0">
             <li><Link to="/" className="block py-2.5 text-sm font-semibold text-(--color-primary-navy)">Dashboard</Link></li>
-            <li><Link to={paths.initialize} className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">Dispute</Link></li>
+          
             <li><Link to="/about" className="block py-2.5 text-sm font-medium text-(--color-text-muted) hover:text-(--color-primary-navy)">About ADR</Link></li>
           </ul>
 

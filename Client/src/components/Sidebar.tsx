@@ -1,14 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import {
-  FiHome,
-  FiPlusCircle,
-  FiMessageSquare,
-  FiSettings,
-  FiUser,
-  FiLogOut,
-} from "react-icons/fi";
+
+import { FiHome, FiMessageSquare, FiUser, FiLogOut, FiCreditCard } from "react-icons/fi";
+import { Sparkles } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useChatStore } from "../store";
+import { paths } from "../../utils/paths";
+import { LuGavel } from "react-icons/lu";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -19,7 +16,7 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-40 hidden md:flex flex-col">
       <div className="flex items-center px-6 h-20 border-b border-gray-200">
         <Link
-          to="/"
+          to={paths.home}
           className="text-[22px] font-extrabold text-(--color-primary-navy) tracking-tight"
         >
           MyRight
@@ -79,8 +76,10 @@ export default function Sidebar() {
 }
 
 const links = [
-  { name: "Dashboard", path: "/dashboard", icon: FiHome },
-  { name: "New Dispute", path: "/dispute/new", icon: FiPlusCircle },
+  { name: "Overview", path: "/dashboard", icon: FiHome },
+  { name: "AI Research", path: "/dispute/new", icon: Sparkles },
+  { name: "Dispute Analysis", path: "/initialize", icon: LuGavel },
   { name: "Mediation", path: "/mediation", icon: FiMessageSquare },
-  { name: "Settings", path: "/settings", icon: FiSettings },
+  { name: "Fees & Payment", path: paths.fees, icon: FiCreditCard },
+  { name: "Profile", path: "/settings", icon: FiUser },
 ];
