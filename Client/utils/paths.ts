@@ -10,4 +10,5 @@ export const paths = {
   mediationSuccess: "/mediation/success",
   requestMediator: "/request-mediator",
   caseDetails: "/disputes/:id",
+  fees: "/fees",
 };
