@@ -5,11 +5,17 @@ import RespondentAcceptedAlert from "../components/request-mediator/RespondentAc
 import RequestMediatorCard from "../components/request-mediator/RequestMediatorCard";
 import SidebarCaseSummary from "../components/request-mediator/SidebarCaseSummary";
 import CaseMilestones from "../components/request-mediator/CaseMilestones";
+import Sidebar from "../components/Sidebar";
+import DashboardTopNav from "../components/dashboard/DashboardTopNav";
 
 export default function RequestMediator() {
   return (
-    <div className="min-h-screen bg-(--color-bg-off-white) pt-12 md:pt-20 pb-16 px-4 sm:px-6 lg:px-12 font-sans">
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 lg:gap-16">
+    <div className="flex min-h-screen bg-(--color-bg-off-white) font-sans">
+      <Sidebar />
+      <div className="flex-1 md:ml-64">
+        <DashboardTopNav />
+        <div className="pt-12 md:pt-20 pb-16 px-4 sm:px-6 lg:px-12">
+          <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 lg:gap-16">
         
         {/* Main Content Area */}
         <div className="flex-1 min-w-0">
@@ -32,6 +38,8 @@ export default function RequestMediator() {
           <CaseMilestones />
         </div>
         
+      </div>
+      </div>
       </div>
     </div>
   );
