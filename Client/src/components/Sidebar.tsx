@@ -1,17 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Gavel } from 'lucide-react'
 
-import {
-  FiHome,
-  FiMessageSquare,
-  FiSettings,
-  FiUser,
-  FiLogOut,
-} from "react-icons/fi";
-import { Sparkles } from 'lucide-react'
+import { FiHome, FiMessageSquare, FiUser, FiLogOut, FiCreditCard } from "react-icons/fi";
+import { Sparkles } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useChatStore } from "../store";
 import { paths } from "../../utils/paths";
+import { LuGavel } from "react-icons/lu";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -84,7 +78,8 @@ export default function Sidebar() {
 const links = [
   { name: "Overview", path: "/dashboard", icon: FiHome },
   { name: "AI Research", path: "/dispute/new", icon: Sparkles },
-  { name: "Dispute Analysis" , path:"/initialize" , icon: Gavel },
+  { name: "Dispute Analysis", path: "/initialize", icon: LuGavel },
   { name: "Mediation", path: "/mediation", icon: FiMessageSquare },
+  { name: "Fees & Payment", path: paths.fees, icon: FiCreditCard },
   { name: "Profile", path: "/settings", icon: FiUser },
 ];
