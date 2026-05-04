@@ -7,6 +7,8 @@ import AnalysisTipsCard from "../components/initialize/AnalysisTipsCard";
 import ProcessTimeline from "../components/initialize/ProcessTimeliine";
 import AnalyzeButton from "../components/initialize/AnalyzeButton";
 import PageHeader from "../components/initialize/PageHeader";
+import Sidebar from "../components/Sidebar";
+import DashboardTopNav from "../components/dashboard/DashboardTopNav";
 
 interface FormState {
   category: string;
@@ -38,34 +40,40 @@ export default function InitializeDisputePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
-      <div className="max-w-5xl mx-auto">
-        <PageHeader />
-        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
-        
-          <div className="flex-1 w-full">
-            <DisputeCategorySelect
-              onChange={(val) => setForm((prev) => ({ ...prev, category: val }))}
-            />
-            <DescriptionTextarea
-              onChange={(val) => setForm((prev) => ({ ...prev, description: val }))}
-            />
-            <SupportingEvidenceUpload
-              onFilesChange={(files) => setForm((prev) => ({ ...prev, files }))}
-            />
-            <AnalyzeButton
-              onClick={handleAnalyze}
-              disabled={!isValid}
-              loading={loading}
-            />
-          </div>
+    <div className="flex min-h-screen bg-gray-100 font-sans">
+      <Sidebar />
+      <div className="flex-1 md:ml-64">
+        <DashboardTopNav />
+        <div className="p-4 sm:p-6">
+          <div className="max-w-5xl mx-auto">
+          <PageHeader />
+          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
+          
+            <div className="flex-1 w-full">
+              <DisputeCategorySelect
+                onChange={(val) => setForm((prev) => ({ ...prev, category: val }))}
+              />
+              <DescriptionTextarea
+                onChange={(val) => setForm((prev) => ({ ...prev, description: val }))}
+              />
+              <SupportingEvidenceUpload
+                onFilesChange={(files) => setForm((prev) => ({ ...prev, files }))}
+              />
+              <AnalyzeButton
+                onClick={handleAnalyze}
+                disabled={!isValid}
+                loading={loading}
+              />
+            </div>
 
-          {/* Right column */}
-          <div className="w-full lg:w-72 shrink-0">
-            <AnalysisTipsCard />
-            <ProcessTimeline />
+            {/* Right column */}
+            <div className="w-full lg:w-72 shrink-0">
+              <AnalysisTipsCard />
+              <ProcessTimeline />
+            </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -1,22 +1,23 @@
-import { useState, useEffect } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useRegisterSW } from "virtual:pwa-register/react";
-import { useAuth } from "./hooks/useAuth";
-import Auth from "./components/Auth";
-import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
-import AboutADR from "./pages/AboutADR";
-import Dashboard from "./pages/Dashboard";
-import CreateDispute from "./pages/CreateDispute";
-import Footer from "./components/Footer";
-import ScrollToTop from "./components/ScrollToTop";
 import { paths } from "../utils/paths";
+import Auth from "./components/Auth";
+import Footer from "./components/Footer";
+import Navbar from "./components/Navbar";
+import ScrollToTop from "./components/ScrollToTop";
+import { useAuth } from "./hooks/useAuth";
+import AboutADR from "./pages/AboutADR";
+import CaseDetails from "./pages/CaseDetails";
+import CreateDispute from "./pages/CreateDispute";
+import Dashboard from "./pages/Dashboard";
+import Home from "./pages/Home";
 import InitializeDisputePage from "./pages/Initialize";
-import Resolution from "./pages/Resolution";
 import MediationRequest from "./pages/MediationRequest";
 import MediationSuccess from "./pages/MediationSuccess";
 import RequestMediator from "./pages/RequestMediator";
-import CaseDetails from "./pages/CaseDetails";
+import Resolution from "./pages/Resolution";
+import FeesAndPayments from "./pages/FeesAndPayments";
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -27,6 +28,7 @@ const App = () => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // controls auth modal and its mode
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
@@ -57,11 +59,13 @@ const App = () => {
         </div>
       )}
 
-      <Navbar
-        onLoginClick={() => setAuthMode("signin")}
-        onSignupClick={() => setAuthMode("signup")}
-        user={user}
-      />
+      {[paths.home, paths.about].includes(location.pathname) && (
+        <Navbar
+          onLoginClick={() => setAuthMode("signin")}
+          onSignupClick={() => setAuthMode("signup")}
+          user={user}
+        />
+      )}
 
       <Routes>
         <Route
@@ -80,9 +84,10 @@ const App = () => {
         <Route path={paths.mediationSuccess} element={<MediationSuccess />} />
         <Route path={paths.requestMediator} element={<RequestMediator />} />
         <Route path={paths.caseDetails} element={<CaseDetails />} />
+        <Route path={paths.fees} element={<FeesAndPayments />} />
       </Routes>
       <ScrollToTop />
-      <Footer />
+      {[paths.home, paths.about].includes(location.pathname) && <Footer />}
 
       {/* Auth modal — shown when authMode is set and user is NOT logged in */}
       {authMode && !user && (
