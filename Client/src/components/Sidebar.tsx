@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 
-import { FiHome, FiMessageSquare, FiUser, FiLogOut } from "react-icons/fi";
+import { FiHome, FiMessageSquare, FiUser, FiLogOut, FiCreditCard } from "react-icons/fi";
 import { Sparkles } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useChatStore } from "../store";
@@ -80,5 +80,6 @@ const links = [
   { name: "AI Research", path: "/dispute/new", icon: Sparkles },
   { name: "Dispute Analysis", path: "/initialize", icon: LuGavel },
   { name: "Mediation", path: "/mediation", icon: FiMessageSquare },
+  { name: "Fees & Payment", path: paths.fees, icon: FiCreditCard },
   { name: "Profile", path: "/settings", icon: FiUser },
 ];
