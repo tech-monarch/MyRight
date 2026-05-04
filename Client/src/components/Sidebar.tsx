@@ -77,7 +77,7 @@ export default function Sidebar() {
 
 const links = [
   { name: "Overview", path: "/dashboard", icon: FiHome },
-  { name: "AI Research", path: "/dispute/new", icon: Sparkles },
+  { name: "AI Resolver", path: "/dispute/new", icon: Sparkles },
   { name: "Dispute Analysis", path: "/initialize", icon: LuGavel },
   { name: "Mediation", path: "/mediation", icon: FiMessageSquare },
   { name: "Fees & Payment", path: paths.fees, icon: FiCreditCard },
