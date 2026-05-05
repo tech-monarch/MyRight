@@ -20,6 +20,7 @@ import Resolution from "./pages/Resolution";
 import FeesAndPayments from "./pages/FeesAndPayments";
 import DisputeOverview from "./pages/DisputeOverview";
 import DisputeProgress from "./pages/DisputeProgress";
+import DisputeChat from "./pages/DisputeChat";
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -28,7 +29,7 @@ const App = () => {
     updateServiceWorker,
   } = useRegisterSW();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null); // controls auth modal and its mode
+  const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -42,8 +43,6 @@ const App = () => {
       window.removeEventListener("online", goOnline);
     };
   }, []);
-
-  // No need for an effect to clear authMode – the modal's render condition already hides it when user exists
 
   if (loading) {
     return (
@@ -89,13 +88,12 @@ const App = () => {
         <Route path={paths.fees} element={<FeesAndPayments />} />
         <Route path="/dispute-overview" element={<DisputeOverview />} />
         <Route path="/dispute/:id" element={<DisputeProgress />} />
-        <Route path="/dispute/:id/chat" element={<InitializeDisputePage />} /> 
-        {/* <Route path="/dispute/:id/chat" element={<ChatWithDispute />} /> */}
+        <Route path="/dispute/:id/chat" element={<DisputeChat />} />
+        <Route path="/ai/:id" element={<DisputeChat />} /> {/* ✅ added missing route */}
       </Routes>
       <ScrollToTop />
       {[paths.home, paths.about].includes(location.pathname) && <Footer />}
 
-      {/* Auth modal — shown when authMode is set and user is NOT logged in */}
       {authMode && !user && (
         <>
           <div
@@ -122,7 +120,6 @@ const App = () => {
         </>
       )}
 
-      {/* PWA update modal */}
       {needRefresh && (
         <>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50" />

@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 import type { Dispute } from "../types/types";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const BASE_URL = import.meta.env.VITE_API_URL || "https://myright.onrender.com";
 
 const authFetch = async (path: string, options: RequestInit = {}) => {
   const {
@@ -129,14 +129,18 @@ export const api = {
   },
 
   dashboard: {
-    getStats: () => authFetch("/api/dashboard/stats"),
-    getDisputes: () => authFetch("/api/dashboard/disputes"),
-    updateDispute: (id: string, data: Partial<Dispute>) =>
-      authFetch(`/api/dashboard/disputes/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      }),
-    deleteDispute: (id: string) =>
-      authFetch(`/api/dashboard/disputes/${id}`, { method: "DELETE" }),
-  },
+  getStats: () => authFetch("/api/dashboard/stats"),
+  getDisputes: () => authFetch("/api/dashboard/disputes"),
+  updateDispute: (id: string, data: Partial<Dispute>) =>
+    authFetch(`/api/dashboard/disputes/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  deleteDispute: (id: string) =>
+    authFetch(`/api/dashboard/disputes/${id}`, { method: "DELETE" }),
+  getDispute: (id: string) => authFetch(`/api/dashboard/disputes/${id}`), // <-- here
+},
+  
 };
+
+

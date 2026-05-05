@@ -49,14 +49,15 @@ export type UserFeedback = {
 export interface Dispute {
   id: string;
   title: string;
-  description?: string; // may not be used everywhere
+  description?: string;
   category: string;
-  status: "pending" | "invited" | "in_mediation" | "resolved"; // backend status strings
-  dateInitiated: string; // formatted string
+  status: string;
+  dateInitiated?: string;
   opponentName: string;
   opponentEmail: string;
   opponentPhone: string;
   opponentOrganization?: string;
+  created_at?: string; // add this line
 }
 
 export type Agreement = {
