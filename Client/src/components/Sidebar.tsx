@@ -5,11 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useChatStore } from "../store";
 import { paths } from "../../utils/paths";
 import { LuGavel } from "react-icons/lu";
-
-interface SidebarProps {
-  isOpen?: boolean;
-  onClose?: () => void;
-}
+import { useUIStore } from "../components/stores/uiStore"; // ✅ fixed import
 
 const links = [
   { name: "Overview", path: "/dashboard", icon: FiHome },
@@ -19,16 +15,17 @@ const links = [
   { name: "Fees & Payment", path: paths.fees, icon: FiCreditCard },
 ];
 
-export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
+export default function Sidebar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const resetChat = useChatStore((state) => state.resetChat);
+  const { sidebarOpen, setSidebarOpen } = useUIStore();
 
   const handleLinkClick = () => {
-    if (onClose) onClose();
+    setSidebarOpen(false);
   };
 
-  // Desktop sidebar (always visible on medium screens and up)
+  // Desktop sidebar (always visible on md+)
   const desktopSidebar = (
     <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-40 hidden md:flex flex-col">
       <div className="flex items-center px-6 h-20 border-b border-gray-200">
@@ -73,7 +70,10 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           </div>
         </div>
         <button
-          onClick={signOut}
+          onClick={() => {
+            signOut();
+            handleLinkClick();
+          }}
           className="flex items-center gap-2 w-full px-3 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors"
         >
           <FiLogOut className="w-4 h-4" />
@@ -84,15 +84,15 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   );
 
   // Mobile overlay + slide‑out sidebar
-  const mobileSidebar = isOpen && (
+  const mobileSidebar = sidebarOpen && (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
       <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-50 md:hidden flex flex-col animate-in slide-in-from-left duration-300">
         <div className="flex items-center justify-between px-6 h-20 border-b border-gray-200">
           <Link to={paths.home} onClick={handleLinkClick} className="text-[22px] font-extrabold text-(--color-primary-navy) tracking-tight">
             MyRight
           </Link>
-          <button onClick={onClose} className="text-gray-500 text-xl">✕</button>
+          <button onClick={() => setSidebarOpen(false)} className="text-gray-500 text-xl">✕</button>
         </div>
         <div className="flex-1 py-6 px-4 flex flex-col gap-2">
           {links.map((link) => {

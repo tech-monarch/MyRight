@@ -88,7 +88,6 @@ export default function Dashboard() {
   const [activeDisputes, setActiveDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -112,9 +111,9 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-screen bg-(--color-bg-off-white) font-sans">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar />  {/* ✅ no props */}
       <div className="flex-1 md:ml-64">
-        <DashboardTopNav onMenuClick={() => setSidebarOpen(true)} />
+        <DashboardTopNav />  {/* ✅ no props */}
         <div className="pt-6 sm:pt-10 pb-8 sm:pb-16 px-4 sm:px-6 lg:px-8 xl:px-16">
           <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-12">
             <div className="flex-1 flex flex-col gap-6">

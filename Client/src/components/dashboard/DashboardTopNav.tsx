@@ -1,22 +1,12 @@
 import { HiBell, HiQuestionMarkCircle } from "react-icons/hi2";
 import { RiMenu3Line } from "react-icons/ri";
 import { useAuth } from "../../hooks/useAuth";
+import { useUIStore } from "../stores/uiStore";
 
-interface DashboardTopNavProps {
-  onMenuClick?: () => void;
-}
-
-/**
- * DashboardTopNav
- *
- * A slim top navigation bar for dashboard-related pages.
- * Displays user initials, notifications, and help icons.
- * On mobile, includes a hamburger button to open the sidebar.
- */
-export default function DashboardTopNav({ onMenuClick }: DashboardTopNavProps) {
+export default function DashboardTopNav() {
   const { user } = useAuth();
+  const { toggleSidebar } = useUIStore();
 
-  // Extract initials from user_metadata (provided by Supabase auth)
   const fullName = user?.user_metadata?.name || "User";
   const initials = fullName
     .split(" ")
@@ -31,18 +21,15 @@ export default function DashboardTopNav({ onMenuClick }: DashboardTopNavProps) {
       className="h-16 shrink-0 flex items-center justify-between px-6 lg:px-10 bg-white border-b border-gray-100 sticky top-0 z-30"
       aria-label="Utility navigation"
     >
-      {/* Left: Hamburger button (visible only on mobile) */}
       <button
-        onClick={onMenuClick}
+        onClick={toggleSidebar}
         className="md:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100 focus:outline-none"
         aria-label="Open menu"
       >
         <RiMenu3Line size={24} />
       </button>
 
-      {/* Right side: Notifications, Help, User initials */}
       <div className="flex items-center gap-4 sm:gap-6 ml-auto">
-        {/* Notifications Button */}
         <button
           className="text-gray-400 hover:text-(--color-primary-blue) transition-all duration-200 relative p-2 rounded-full hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-(--color-primary-blue)/20"
           aria-label="View notifications"
@@ -50,16 +37,12 @@ export default function DashboardTopNav({ onMenuClick }: DashboardTopNavProps) {
           <HiBell className="w-6 h-6" />
           <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
         </button>
-
-        {/* Help Button */}
         <button
           className="text-gray-400 hover:text-(--color-primary-blue) transition-all duration-200 p-2 rounded-full hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-(--color-primary-blue)/20"
           aria-label="Get help"
         >
           <HiQuestionMarkCircle className="w-6 h-6" />
         </button>
-
-        {/* User Profile / Initials */}
         <div
           className="w-10 h-10 bg-(--color-primary-blue) rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm select-none cursor-default"
           title={fullName}
