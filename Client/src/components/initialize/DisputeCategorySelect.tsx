@@ -1,5 +1,4 @@
-import { useState } from "react";
-import type { ChangeEvent } from "react";
+import { useInitializeStore } from "../stores/initializeStore";
 
 const CATEGORIES: string[] = [
   "Landlord / Tenant",
@@ -9,17 +8,8 @@ const CATEGORIES: string[] = [
   "Consumer Rights",
 ];
 
-interface DisputeCategorySelectProps {
-  onChange?: (value: string) => void;
-}
-
-export default function DisputeCategorySelect({ onChange }: DisputeCategorySelectProps) {
-  const [selected, setSelected] = useState<string>("");
-
-  const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setSelected(e.target.value);
-    onChange?.(e.target.value);
-  };
+export default function DisputeCategorySelect() {
+  const { category, setCategory } = useInitializeStore();
 
   return (
     <div className="border border-gray-200 rounded-xl p-4 mb-4">
@@ -27,8 +17,8 @@ export default function DisputeCategorySelect({ onChange }: DisputeCategorySelec
         Dispute Category
       </label>
       <select
-        value={selected}
-        onChange={handleChange}
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
       >
         <option value="">Select a category</option>

@@ -1,22 +1,20 @@
-import { useState} from "react";
+import { useState } from "react";
 import type { ChangeEvent } from "react";
 import { Paperclip, Mic } from "lucide-react";
+import { useInitializeStore } from "../stores/initializeStore";
 
 const MIN_CHARS = 150;
 
-interface DescriptionTextareaProps {
-  onChange?: (value: string) => void;
-}
-
-export default function DescriptionTextarea({ onChange }: DescriptionTextareaProps) {
-  const [value, setValue] = useState<string>("");
+export default function DescriptionTextarea() {
+  const { description, setDescription } = useInitializeStore();
+  const [charCount, setCharCount] = useState(description.length);
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setValue(e.target.value);
-    onChange?.(e.target.value);
+    const value = e.target.value;
+    setDescription(value);
+    setCharCount(value.length);
   };
 
-  const charCount = value.length;
   const meetsMinimum = charCount >= MIN_CHARS;
 
   return (
@@ -30,7 +28,7 @@ export default function DescriptionTextarea({ onChange }: DescriptionTextareaPro
         </span>
       </div>
       <textarea
-        value={value}
+        value={description}
         onChange={handleChange}
         placeholder="My landlord increased rent without notice..."
         rows={6}
