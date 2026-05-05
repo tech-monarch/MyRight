@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { paths } from "../utils/paths";
@@ -28,21 +28,9 @@ const App = () => {
     needRefresh: [needRefresh],
     updateServiceWorker,
   } = useRegisterSW();
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [authMode, setAuthMode] = useState<"signin" | "signup" | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  useEffect(() => {
-    const goOffline = () => setIsOffline(true);
-    const goOnline = () => setIsOffline(false);
-    window.addEventListener("offline", goOffline);
-    window.addEventListener("online", goOnline);
-    return () => {
-      window.removeEventListener("offline", goOffline);
-      window.removeEventListener("online", goOnline);
-    };
-  }, []);
 
   if (loading) {
     return (
@@ -54,12 +42,6 @@ const App = () => {
 
   return (
     <div>
-      {isOffline && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500 text-white text-center text-sm py-2 font-medium">
-          You're offline — some features may be unavailable
-        </div>
-      )}
-
       {[paths.home, paths.about].includes(location.pathname) && (
         <Navbar
           onLoginClick={() => setAuthMode("signin")}
@@ -89,7 +71,7 @@ const App = () => {
         <Route path="/dispute-overview" element={<DisputeOverview />} />
         <Route path="/dispute/:id" element={<DisputeProgress />} />
         <Route path="/dispute/:id/chat" element={<DisputeChat />} />
-        <Route path="/ai/:id" element={<DisputeChat />} /> {/* ✅ added missing route */}
+        <Route path="/ai/:id" element={<DisputeChat />} />
       </Routes>
       <ScrollToTop />
       {[paths.home, paths.about].includes(location.pathname) && <Footer />}
