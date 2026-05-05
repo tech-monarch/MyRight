@@ -1,4 +1,5 @@
-import { useDashboard } from "../hooks/useDashboard"; // adjust path if needed
+import { useEffect, useState } from "react";
+import { api } from "../lib/api";
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import TrustIndicator from "../components/dashboard/TrustIndicator";
 import StatCards from "../components/dashboard/StatCards";
@@ -6,6 +7,7 @@ import ActiveDisputesList from "../components/dashboard/ActiveDisputesList";
 import EducationalSidebar from "../components/dashboard/EducationalSidebar";
 import Sidebar from "../components/Sidebar";
 import DashboardTopNav from "../components/dashboard/DashboardTopNav";
+import type { DashboardStats, Dispute } from "../types/types";
 
 // ── Skeleton shimmer for loading state ──────────────────────────────────────
 function Skeleton({ className = "" }: { className?: string }) {
@@ -53,8 +55,7 @@ function DashboardSkeleton() {
               <Skeleton className="h-3 w-48" />
             </div>
             <div className="flex gap-2">
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-28" />
             </div>
           </div>
         ))}
@@ -85,8 +86,38 @@ function ErrorBanner({ message }: { message: string }) {
 
 // ── Dashboard page ────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const { user, stats, activeDisputes, recentAgreements, loading, error } =
-    useDashboard();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalDisputes: 0,
+    activeMediations: 0,
+    resolvedCases: 0,
+  });
+  const [activeDisputes, setActiveDisputes] = useState<Dispute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // You can also fetch user info from your auth hook; we'll keep a placeholder.
+  const user = null; // replace with your actual user data if needed
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const [statsData, disputesData] = await Promise.all([
+          api.dashboard.getStats(),
+          api.dashboard.getDisputes(),
+        ]);
+        setStats(statsData);
+        setActiveDisputes(disputesData.disputes);
+      } catch (err: unknown) {
+        console.error(err);
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load dashboard";
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
 
   return (
     <div className="flex min-h-screen bg-(--color-bg-off-white) font-sans">
@@ -95,31 +126,29 @@ export default function Dashboard() {
         <DashboardTopNav />
         <div className="pt-10 pb-16 px-6 lg:px-16">
           <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 lg:gap-16">
-        {/* ── Main column ── */}
-        <div className="flex-1 flex flex-col gap-10">
-          {loading ? (
-            <DashboardSkeleton />
-          ) : error ? (
-            <>
-              <DashboardHeader user={null} />
-              <ErrorBanner message={error} />
-            </>
-          ) : (
-            <>
-              <DashboardHeader user={user} />
-              <TrustIndicator />
-              <StatCards stats={stats} />
-              <ActiveDisputesList disputes={activeDisputes} />
-            </>
-          )}
-        </div>
+            {/* ── Main column ── */}
+            <div className="flex-1 flex flex-col gap-10">
+              {loading ? (
+                <DashboardSkeleton />
+              ) : error ? (
+                <>
+                  <DashboardHeader user={null} />
+                  <ErrorBanner message={error} />
+                </>
+              ) : (
+                <>
+                  <DashboardHeader user={user} />
+                  <TrustIndicator />
+                  <StatCards stats={stats} />
+                  <ActiveDisputesList disputes={activeDisputes} />
+                </>
+              )}
+            </div>
 
-        {/* ── Sidebar ── */}
-        <EducationalSidebar
-          recentAgreements={loading ? [] : recentAgreements}
-        />
-      </div>
-      </div>
+            {/* ── Sidebar ── */}
+            <EducationalSidebar recentAgreements={loading ? [] : []} />
+          </div>
+        </div>
       </div>
     </div>
   );

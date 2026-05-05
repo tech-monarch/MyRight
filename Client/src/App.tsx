@@ -18,6 +18,8 @@ import MediationSuccess from "./pages/MediationSuccess";
 import RequestMediator from "./pages/RequestMediator";
 import Resolution from "./pages/Resolution";
 import FeesAndPayments from "./pages/FeesAndPayments";
+import DisputeOverview from "./pages/DisputeOverview";
+import DisputeProgress from "./pages/DisputeProgress";
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -85,6 +87,10 @@ const App = () => {
         <Route path={paths.requestMediator} element={<RequestMediator />} />
         <Route path={paths.caseDetails} element={<CaseDetails />} />
         <Route path={paths.fees} element={<FeesAndPayments />} />
+        <Route path="/dispute-overview" element={<DisputeOverview />} />
+        <Route path="/dispute/:id" element={<DisputeProgress />} />
+        <Route path="/dispute/:id/chat" element={<InitializeDisputePage />} /> 
+        {/* <Route path="/dispute/:id/chat" element={<ChatWithDispute />} /> */}
       </Routes>
       <ScrollToTop />
       {[paths.home, paths.about].includes(location.pathname) && <Footer />}
