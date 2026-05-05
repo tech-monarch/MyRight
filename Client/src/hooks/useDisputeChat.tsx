@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { FALLBACK_RESPONSES, detectFallbackCategory } from "../lib/fallbacks";
 import { getDeviceLocation } from "../lib/location";
 import { useChatStore } from "../store";
-import type { AIMessageProps } from "../types/types";
+import type { AIMessageProps, Dispute } from "../types/types";
 
 type GeoLocation = { lat: number; lng: number; mapsUrl: string } | undefined;
 type ChatHistoryItem = { role: string; content: string };
@@ -31,6 +31,9 @@ export function useDisputeChat() {
   } = useChatStore();
 
   const hasInitialized = useRef(false);
+  const [disputeContext, setDisputeContext] = useState<Dispute | null>(null);
+  const [systemMessageInjected, setSystemMessageInjected] = useState(false);
+  const initialAnalysisSent = useRef(false);
 
   const saveSession = async (
     msgs: AIMessageProps[],
@@ -48,7 +51,7 @@ export function useDisputeChat() {
         urgency,
         sessionId: sessionId ? String(sessionId) : undefined,
       });
-      if (result.session?.id) setSessionId(Number(result.session.id)); // convert to number
+      if (result.session?.id) setSessionId(Number(result.session.id));
     } catch (err) {
       console.error("saveSession failed:", err);
     }
@@ -90,7 +93,6 @@ export function useDisputeChat() {
     [setChatHistory],
   );
 
-  // Show a simple "Resolve Issue" button that navigates to /initialize
   const showResolveButton = () => {
     const buttonMessage = (
       <div className="mt-2">
@@ -106,7 +108,6 @@ export function useDisputeChat() {
     addToHistory("ai", "[Resolve Issue button]");
   };
 
-  // ── Load a previous chat session ─────────────────────────
   const loadSession = useCallback((sessionId: string, sessionMessages: AIMessageProps[]) => {
     setMessages(sessionMessages);
     const history = sessionMessages.map(m => ({ role: m.role, content: String(m.content) }));
@@ -115,9 +116,47 @@ export function useDisputeChat() {
     setPhase("INTAKE");
   }, [setMessages, setChatHistory, setSessionId, setPhase]);
 
-  // ── Initialisation ─────────────────────────────────
+  // ── Initial analysis (only called from CreateDispute – not via an effect here) ──
+  const sendInitialAnalysis = useCallback(async () => {
+    if (initialAnalysisSent.current) return;
+    if (!disputeContext) return;
+
+    setPhase("ANALYZING");
+    try {
+      const analysisPrompt = `Analyze the following dispute and give your honest, direct assessment. Include:
+- The core problem
+- Legal strengths and weaknesses
+- Likely outcome if it goes to court
+- Practical recommendations (including ADR)
+Be concise but brutally honest.`;
+
+      const location = (await getDeviceLocation().catch(() => undefined)) as GeoLocation;
+      const fakeHistory: ChatHistoryItem[] = [
+        { role: "system", content: `Dispute details: ${JSON.stringify(disputeContext)}` },
+        { role: "user", content: analysisPrompt }
+      ];
+      const analysis = await analyzeWithFallback(analysisPrompt, location, fakeHistory, "analyze");
+      const aiMsg: AIMessageProps = {
+        role: "ai",
+        content: analysis.aiResponse,
+        animate: true,
+      };
+      setMessages([aiMsg]);
+      addToHistory("ai", analysis.aiResponse);
+      await saveSession([aiMsg], analysis.category, analysis.urgency);
+      initialAnalysisSent.current = true;
+    } catch (err) {
+      console.error("Initial analysis failed:", err);
+      addAIMessage("I'm having trouble analyzing your dispute right now. Could you tell me more about what's going on?");
+    } finally {
+      setPhase("INTAKE");
+    }
+  }, [disputeContext, setMessages, addToHistory, saveSession, setPhase, analyzeWithFallback]);
+
+  // ── Initial greeting (only when no dispute context) ──
   useEffect(() => {
     if (hasInitialized.current) return;
+    if (disputeContext) return; // Skip greeting if we have a dispute
     hasInitialized.current = true;
     if (messages.length > 0) return;
 
@@ -129,7 +168,7 @@ export function useDisputeChat() {
       addToHistory("ai", greeting);
       setPhase("INTAKE");
     })();
-  }, [messages.length, addAIMessage, addToHistory, setPhase]);
+  }, [messages.length, addAIMessage, addToHistory, setPhase, disputeContext]);
 
   // ── Main message handler ─────────────────────────
   const handleSend = async (text: string) => {
@@ -138,6 +177,12 @@ export function useDisputeChat() {
       content: text,
       animate: true,
     };
+
+    if (disputeContext && !systemMessageInjected && !chatHistory.some(m => m.role === 'system')) {
+      const systemMsg = `The user is discussing their dispute: "${disputeContext.description}". Category: ${disputeContext.category}. Opponent: ${disputeContext.opponentName}. Provide tailored legal and ADR advice based on this information.`;
+      addToHistory('system', systemMsg);
+      setSystemMessageInjected(true);
+    }
 
     if (isEmergency(text)) {
       setPhase("ANALYZING");
@@ -191,5 +236,7 @@ export function useDisputeChat() {
     modal: null,
     placeholder: "Ask me anything...",
     loadSession,
+    setDisputeContext,
+    sendInitialAnalysis,
   };
 }
