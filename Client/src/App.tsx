@@ -111,7 +111,7 @@ const App = () => {
               <Auth
                 onSuccess={() => {
                   setAuthMode(null);
-                  navigate(paths.dashboard);
+                  navigate(paths.home);
                 }}
                 initialMode={authMode}
               />

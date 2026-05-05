@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+import Swal from 'sweetalert2';
 
 type Mode = "signin" | "signup";
 
@@ -17,30 +18,35 @@ const Auth = ({ onSuccess, initialMode = "signin" }: AuthProps) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState("");
 
-  const handleSubmit = async () => {
-    setError("");
-    setSuccess("");
-    setLoading(true);
+const handleSubmit = async () => {
+  setError("");
+  setLoading(true);
 
-    try {
-      if (mode === "signup") {
-        const { error } = await signUp(email, password, name);
-        if (error) throw error;
-        onSuccess();
-      } else {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
-        onSuccess(); // close modal on successful login
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+  try {
+    if (mode === "signup") {
+      const { error } = await signUp(email, password, name);
+      if (error) throw error;
+      await Swal.fire({
+        icon: 'info',
+        title: 'Email Confirmation Required',
+        html: `We've sent a confirmation link to <strong>${email}</strong>.<br/>Please check your inbox (and spam folder) and click the link to activate your account.`,
+        confirmButtonText: 'Got it',
+        confirmButtonColor: '#1e3a8a',
+      });
+      onSuccess();
+    } else {
+      const { error } = await signIn(email, password);
+      if (error) throw error;
+      onSuccess();
     }
-  };
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "An error occurred";
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-md p-8">
@@ -56,9 +62,7 @@ const Auth = ({ onSuccess, initialMode = "signin" }: AuthProps) => {
       <div className="flex flex-col gap-4">
         {mode === "signup" && (
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-gray-700">
-              Full Name
-            </label>
+            <label className="text-sm font-medium text-gray-700">Full Name</label>
             <input
               type="text"
               placeholder="John Doe"
@@ -92,14 +96,7 @@ const Auth = ({ onSuccess, initialMode = "signin" }: AuthProps) => {
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm bg-red-50 px-4 py-2.5 rounded-lg">
-            {error}
-          </p>
-        )}
-        {success && (
-          <p className="text-green-600 text-sm bg-green-50 px-4 py-2.5 rounded-lg">
-            {success}
-          </p>
+          <p className="text-red-500 text-sm bg-red-50 px-4 py-2.5 rounded-lg">{error}</p>
         )}
 
         <button
@@ -107,11 +104,7 @@ const Auth = ({ onSuccess, initialMode = "signin" }: AuthProps) => {
           disabled={loading}
           className="w-full bg-(--color-primary-navy) text-white rounded-xl py-3 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed mt-1"
         >
-          {loading
-            ? "Please wait..."
-            : mode === "signin"
-              ? "Sign In"
-              : "Create Account"}
+          {loading ? "Please wait..." : mode === "signin" ? "Sign In" : "Create Account"}
         </button>
 
         <p className="text-center text-sm text-gray-500">
@@ -122,7 +115,6 @@ const Auth = ({ onSuccess, initialMode = "signin" }: AuthProps) => {
             onClick={() => {
               setMode(mode === "signin" ? "signup" : "signin");
               setError("");
-              setSuccess("");
             }}
             className="text-(--color-primary-navy) font-semibold hover:underline"
           >
