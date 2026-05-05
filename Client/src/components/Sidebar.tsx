@@ -79,7 +79,7 @@ const links = [
   { name: "Overview", path: "/dashboard", icon: FiHome },
   { name: "AI Resolver", path: "/dispute/new", icon: Sparkles },
   { name: "Dispute Analysis", path: "/initialize", icon: LuGavel },
-  { name: "Mediation", path: "/mediation", icon: FiMessageSquare },
+  { name: "My Disputes", path: "/dispute-overview", icon: FiMessageSquare },
   { name: "Fees & Payment", path: paths.fees, icon: FiCreditCard },
-  { name: "Profile", path: "/settings", icon: FiUser },
+  // { name: "Profile", path: "/settings", icon: FiUser },
 ];

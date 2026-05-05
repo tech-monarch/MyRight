@@ -1,10 +1,9 @@
 import {
-  RiRobot2Line,
-  RiMessage3Line,
   RiFileList3Line,
   RiArrowRightLine,
+  RiMessage3Line,
 } from "react-icons/ri";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useChatStore } from "../../store";
 import type { Dispute } from "../../types/types";
 
@@ -12,9 +11,8 @@ interface ActiveDisputesListProps {
   disputes: Dispute[];
 }
 
-export default function ActiveDisputesList({
-  disputes,
-}: ActiveDisputesListProps) {
+export default function ActiveDisputesList({ disputes }: ActiveDisputesListProps) {
+  const navigate = useNavigate();
   const resetChat = useChatStore((state) => state.resetChat);
 
   return (
@@ -23,7 +21,10 @@ export default function ActiveDisputesList({
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-(--color-text-muted)">
           Active Disputes
         </p>
-        <button className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-(--color-primary-blue) hover:gap-2 transition-all duration-150 bg-(--color-primary-light) px-3 py-1.5 rounded-md">
+        <button
+          onClick={() => navigate("/disputes-overview")}
+          className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-(--color-primary-blue) hover:gap-2 transition-all duration-150 bg-(--color-primary-light) px-3 py-1.5 rounded-md"
+        >
           View All <RiArrowRightLine className="w-3.5 h-3.5" />
         </button>
       </div>
@@ -63,15 +64,14 @@ export default function ActiveDisputesList({
                   </div>
                 </div>
 
-                {/* Actions */}
+                {/* Actions – single "Chat with your Case" button */}
                 <div className="flex gap-2 ml-9 md:ml-0 shrink-0">
-                  <button className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider border border-(--color-border-light) px-3 py-2 rounded-md text-(--color-primary-navy) hover:border-(--color-primary-navy) transition-colors duration-150">
-                    <RiRobot2Line className="w-3.5 h-3.5" />
-                    AI Guide
-                  </button>
-                  <button className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-(--color-primary-navy) text-white px-3 py-2 rounded-md hover:bg-(--color-primary-blue) transition-colors duration-150">
+                  <button
+                    onClick={() => navigate(`/dispute/${dispute.id}/chat`)}
+                    className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-(--color-primary-navy) text-white px-3 py-2 rounded-md hover:bg-(--color-primary-blue) transition-colors duration-150"
+                  >
                     <RiMessage3Line className="w-3.5 h-3.5" />
-                    Chatroom
+                    Chat with your Case
                   </button>
                 </div>
               </div>
@@ -104,9 +104,9 @@ export default function ActiveDisputesList({
   );
 }
 
-const statusConfig: Record<Dispute["status"], { label: string; dot: string }> = {
-  "In Mediation": { label: "In Mediation", dot: "bg-(--color-primary-blue)" },
-  "AI Assessment": { label: "AI Assessment", dot: "bg-violet-500" },
-  "Invited Party": { label: "Invited Party", dot: "bg-amber-500" },
-  Resolved: { label: "Resolved", dot: "bg-emerald-500" },
+const statusConfig: Record<string, { label: string; dot: string }> = {
+  pending: { label: "AI Assessment", dot: "bg-violet-500" },
+  invited: { label: "Invited Party", dot: "bg-amber-500" },
+  in_mediation: { label: "In Mediation", dot: "bg-(--color-primary-blue)" },
+  resolved: { label: "Resolved", dot: "bg-emerald-500" },
 };

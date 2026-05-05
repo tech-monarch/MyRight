@@ -1,15 +1,18 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { History } from "lucide-react";
 import ChatInput from "../components/dispute/ChatInput";
 import ChatLoadingIndicator from "../components/dispute/ChatLoadingIndicator";
 import ChatMessage from "../components/dispute/ChatMessage";
 import Sidebar from "../components/Sidebar";
 import { useDisputeChat } from "../hooks/useDisputeChat";
 import DashboardTopNav from "../components/dashboard/DashboardTopNav";
+import ChatHistoryPanel from "../components/dispute/ChatHistoryPanel";
+import type { AIMessageProps } from "../types/types";
 
 export default function CreateDispute() {
-  const { messages, handleSend, isInputDisabled, isLoading, modal } =
-    useDisputeChat();
+  const { messages, handleSend, isInputDisabled, isLoading, modal, loadSession } = useDisputeChat();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -23,11 +26,24 @@ export default function CreateDispute() {
   const isConversationStarted = messages.some((m) => m.role === "user");
   const showGreeting = !isConversationStarted && messages.length > 0;
 
+  const handleSelectSession = (sessionId: string, sessionMessages: AIMessageProps[]) => {
+    loadSession(sessionId, sessionMessages);
+  };
+
   return (
     <div className="flex h-screen bg-white font-sans overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col h-full md:ml-64 relative overflow-hidden">
         <DashboardTopNav />
+
+        {/* Fixed history button at top-right */}
+        <button
+          onClick={() => setIsHistoryOpen(true)}
+          className="fixed top-20 right-4 z-40 bg-primary-navy text-white p-3 rounded-full shadow-lg hover:bg-blue-800 transition-colors"
+        >
+          <History size={20} />
+        </button>
+
         {modal}
         <div
           ref={scrollRef}
@@ -60,6 +76,12 @@ export default function CreateDispute() {
           />
         </div>
       </div>
+
+      <ChatHistoryPanel
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onSelectSession={handleSelectSession}
+      />
     </div>
   );
 }
