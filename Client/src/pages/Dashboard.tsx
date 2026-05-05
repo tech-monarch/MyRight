@@ -32,8 +32,21 @@ function DashboardSkeleton() {
           </div>
         ))}
       </div>
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <div className="min-w-[500px]">
+      <div className="md:hidden space-y-4">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex justify-between items-start mb-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+            <Skeleton className="h-5 w-full mb-2" />
+            <Skeleton className="h-3 w-28 mb-4" />
+            <Skeleton className="h-8 w-full rounded-md" />
+          </div>
+        ))}
+      </div>
+      <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200">
+        <div className="min-w-full">
           {[0, 1, 2].map((i) => (
             <div key={i} className="p-4 flex gap-3 border-b border-gray-100">
               <Skeleton className="h-4 w-6" />
