@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { FiHome, FiMessageSquare, FiUser, FiLogOut, FiCreditCard } from "react-icons/fi";
+import { FiHome, FiMessageSquare, FiUser, FiLogOut } from "react-icons/fi";
 import { Sparkles } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useChatStore } from "../store";
@@ -12,7 +12,7 @@ const links = [
   { name: "AI Resolver", path: "/dispute/new", icon: Sparkles },
   { name: "Dispute Analysis", path: "/initialize", icon: LuGavel },
   { name: "My Disputes", path: "/dispute-overview", icon: FiMessageSquare },
-  { name: "Fees & Payment", path: paths.fees, icon: FiCreditCard },
+  // { name: "Fees & Payment", path: paths.fees, icon: FiCreditCard },
 ];
 
 export default function Sidebar() {
