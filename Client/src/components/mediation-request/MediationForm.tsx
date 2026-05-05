@@ -21,7 +21,7 @@ export default function MediationForm() {
           <input
             type="text"
             placeholder="Nimah A"
-            className="w-full bg-[#e9ecef] border-none rounded-md px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-navy"
+            className="w-full bg-bg-light-gray border-none rounded-md px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-navy"
           />
         </div>
         <div>
@@ -31,7 +31,7 @@ export default function MediationForm() {
           <input
             type="text"
             placeholder="Pantheon"
-            className="w-full bg-[#e9ecef] border-none rounded-md px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-navy"
+            className="w-full bg-bg-light-gray border-none rounded-md px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-navy"
           />
         </div>
       </div>
@@ -43,7 +43,7 @@ export default function MediationForm() {
         <input
           type="email"
           placeholder="contact@otherparty.com"
-          className="w-full bg-[#e9ecef] border-none rounded-md px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-navy"
+          className="w-full bg-bg-light-gray border-none rounded-md px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-navy"
         />
       </div>
 
@@ -51,8 +51,8 @@ export default function MediationForm() {
         <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-widest mb-2">
           PHONE NUMBER
         </label>
-        <div className="flex bg-[#e9ecef] rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-primary-navy transition-shadow">
-          <div className="px-4 py-3 bg-[#e2e6eb] text-sm font-semibold text-gray-700 flex items-center shrink-0">
+        <div className="flex bg-bg-light-gray rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-primary-navy transition-shadow">
+          <div className="px-4 py-3 bg-bg-light-gray text-sm font-semibold text-gray-700 flex items-center shrink-0">
             +234
           </div>
           <input

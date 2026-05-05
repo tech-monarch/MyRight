@@ -4,13 +4,13 @@ interface CTAProps {
 
 const CTA = ({ onGetStarted }: CTAProps) => {
   return (
-    <section className="py-24 px-6 md:px-12 font-sans bg-[var(--color-bg-white)] flex justify-center">
+    <section className="py-24 px-6 md:px-12 font-sans bg-(--color-bg-white) flex justify-center">
       <div
         data-aos="zoom-in"
         data-aos-duration="600"
-        className="w-full max-w-5xl bg-[var(--color-primary-navy)] rounded-3xl p-12 md:p-20 text-center shadow-2xl relative overflow-hidden"
+        className="w-full max-w-5xl bg-(--color-primary-navy) rounded-3xl p-12 md:p-20 text-center shadow-2xl relative overflow-hidden"
       >
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-linear-to-br from-white/5 to-transparent pointer-events-none"></div>
         <div className="relative z-10">
           <h2
             data-aos="fade-up"
@@ -29,7 +29,7 @@ const CTA = ({ onGetStarted }: CTAProps) => {
           <div data-aos="fade-up" data-aos-delay="400">
             <button
               onClick={onGetStarted}
-              className="bg-white text-[var(--color-primary-navy)] px-8 py-4 rounded-md font-bold hover:bg-gray-100 transition-colors shadow-sm text-sm md:text-base"
+              className="bg-white text-var(--color-primary-navy) px-8 py-4 rounded-md font-bold hover:bg-gray-100 transition-colors shadow-sm text-sm md:text-base"
             >
               Start Dispute Now
             </button>
