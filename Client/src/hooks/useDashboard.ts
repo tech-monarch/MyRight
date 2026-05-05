@@ -1,26 +1,21 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
-import type {
-  User,
-  Dispute,
-  Agreement,
-  DashboardStats,
-} from "../types/types";
+import type { User, Dispute, Agreement, DashboardStats } from "../types/types";
 
-// Maps your DB status values → the UI status labels your components expect
+// Maps your DB status values → the Dispute status type
 function mapStatus(dbStatus: string): Dispute["status"] {
   switch (dbStatus) {
     case "open":
-      return "AI Assessment";
+      return "pending";
     case "pending":
-      return "Invited Party";
+      return "invited";
     case "in-mediation":
-      return "In Mediation";
+      return "in_mediation";
     case "resolved":
     case "closed":
-      return "Resolved";
+      return "resolved";
     default:
-      return "AI Assessment";
+      return "pending";
   }
 }
 
@@ -121,6 +116,9 @@ export function useDashboard(): DashboardData {
           category: c.category ?? "General",
           status: mapStatus(c.status),
           dateInitiated: new Date(c.created_at).toISOString().split("T")[0],
+          opponentName: "",
+          opponentEmail: "",
+          opponentPhone: "",
         }));
 
         setActiveDisputes(disputes);

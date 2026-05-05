@@ -46,9 +46,9 @@ export function useDisputeChat() {
         messages: serializable,
         category,
         urgency,
-        sessionId: sessionId || undefined,
+        sessionId: sessionId ? String(sessionId) : undefined,
       });
-      if (result.session?.id) setSessionId(result.session.id);
+      if (result.session?.id) setSessionId(Number(result.session.id)); // convert to number
     } catch (err) {
       console.error("saveSession failed:", err);
     }
@@ -106,6 +106,15 @@ export function useDisputeChat() {
     addToHistory("ai", "[Resolve Issue button]");
   };
 
+  // ── Load a previous chat session ─────────────────────────
+  const loadSession = useCallback((sessionId: string, sessionMessages: AIMessageProps[]) => {
+    setMessages(sessionMessages);
+    const history = sessionMessages.map(m => ({ role: m.role, content: String(m.content) }));
+    setChatHistory(history);
+    setSessionId(Number(sessionId));
+    setPhase("INTAKE");
+  }, [setMessages, setChatHistory, setSessionId, setPhase]);
+
   // ── Initialisation ─────────────────────────────────
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -122,7 +131,7 @@ export function useDisputeChat() {
     })();
   }, [messages.length, addAIMessage, addToHistory, setPhase]);
 
-  // ── Main message handler (context‑aware only, no data collection) ──
+  // ── Main message handler ─────────────────────────
   const handleSend = async (text: string) => {
     const userMsg: AIMessageProps = {
       role: "user",
@@ -130,7 +139,6 @@ export function useDisputeChat() {
       animate: true,
     };
 
-    // Emergency override (kept for safety)
     if (isEmergency(text)) {
       setPhase("ANALYZING");
       const location = (await getDeviceLocation().catch(() => undefined)) as GeoLocation;
@@ -149,7 +157,6 @@ export function useDisputeChat() {
       return;
     }
 
-    // Normal flow: get AI response (context‑aware via history)
     setPhase("ANALYZING");
     const location = (await getDeviceLocation().catch(() => undefined)) as GeoLocation;
     const analysis = await analyzeWithFallback(text, location, chatHistory, "analyze");
@@ -166,7 +173,6 @@ export function useDisputeChat() {
 
     await saveSession(newMessages, analysis.category || "General", analysis.urgency || "low");
 
-    // If user typed exactly "RESOLVE ISSUE", show the navigation button
     if (text.trim() === "RESOLVE ISSUE") {
       showResolveButton();
     }
@@ -184,5 +190,6 @@ export function useDisputeChat() {
     isLoading,
     modal: null,
     placeholder: "Ask me anything...",
+    loadSession,
   };
 }

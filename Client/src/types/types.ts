@@ -46,13 +46,18 @@ export type UserFeedback = {
   comments: string;
 };
 
-export type Dispute = {
+export interface Dispute {
   id: string;
   title: string;
+  description?: string; // may not be used everywhere
   category: string;
-  status: "AI Assessment" | "Invited Party" | "In Mediation" | "Resolved";
-  dateInitiated: string;
-};
+  status: "pending" | "invited" | "in_mediation" | "resolved"; // backend status strings
+  dateInitiated: string; // formatted string
+  opponentName: string;
+  opponentEmail: string;
+  opponentPhone: string;
+  opponentOrganization?: string;
+}
 
 export type Agreement = {
   id: string;
@@ -109,4 +114,16 @@ export interface AIMessageProps {
   role: AIMessageRole;
   content: string | React.ReactNode;
   animate?: boolean;
+}
+
+export interface AnalysisResult {
+  summary: string;
+  keyIssues: string[];
+  relevantLaws: string[];
+  ADRRecommendation: string;
+  nextSteps: string[];
+  urgencyLevel: string;
+  estimatedDuration: string;
+  riskNotes: string;
+  localResources: string | null;
 }
