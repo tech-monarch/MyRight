@@ -95,4 +95,12 @@ export const api = {
 
     getById: (id: string) => authFetch(`/api/chats/${id}`),
   },
+  
+  initialize: {
+    analyze: (data: { description: string; category: string; fileUrls?: string[] }) =>
+      authFetch('/api/initialize/analyze', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
 }

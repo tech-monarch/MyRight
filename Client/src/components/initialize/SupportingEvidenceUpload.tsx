@@ -1,6 +1,7 @@
-import { useRef, useState} from "react";
-import type {  DragEvent, ChangeEvent } from 'react'
+import { useRef, useState } from "react";
+import type { DragEvent, ChangeEvent } from "react";
 import { UploadCloud, X } from "lucide-react";
+import { useInitializeStore } from "../stores/initializeStore";
 
 const ACCEPTED = ".pdf,.jpg,.png";
 const MAX_MB = 10;
@@ -11,11 +12,8 @@ interface UploadedFile {
   size: number;
 }
 
-interface SupportingEvidenceUploadProps {
-  onFilesChange?: (files: File[]) => void;
-}
-
-export default function SupportingEvidenceUpload({ onFilesChange }: SupportingEvidenceUploadProps) {
+export default function SupportingEvidenceUpload() {
+  const { addFiles } = useInitializeStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [dragging, setDragging] = useState<boolean>(false);
@@ -44,7 +42,7 @@ export default function SupportingEvidenceUpload({ onFilesChange }: SupportingEv
       ...prev,
       ...valid.map((f) => ({ name: f.name, size: f.size })),
     ]);
-    onFilesChange?.(valid);
+    addFiles(valid);
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -70,7 +68,9 @@ export default function SupportingEvidenceUpload({ onFilesChange }: SupportingEv
     <div className="border border-gray-200 rounded-xl p-4 mb-4">
       <label className="text-xs font-semibold text-primary-navy uppercase tracking-widest block mb-3">
         Supporting Evidence{" "}
-        <span className="normal-case font-normal text-gray-400">(Optional)</span>
+        <span className="normal-case font-normal text-gray-400">
+          (Optional)
+        </span>
       </label>
 
       <div
@@ -86,7 +86,9 @@ export default function SupportingEvidenceUpload({ onFilesChange }: SupportingEv
           Drag &amp; drop files or{" "}
           <span className="text-blue-600 underline">browse</span>
         </p>
-        <p className="text-xs text-gray-400">PDF, JPG, or PNG. Max {MAX_MB}MB per file.</p>
+        <p className="text-xs text-gray-400">
+          PDF, JPG, or PNG. Max {MAX_MB}MB per file.
+        </p>
         <input
           ref={inputRef}
           type="file"
@@ -102,10 +104,15 @@ export default function SupportingEvidenceUpload({ onFilesChange }: SupportingEv
       {files.length > 0 && (
         <ul className="mt-3 space-y-1">
           {files.map((f, i) => (
-            <li key={i} className="text-xs text-gray-600 flex justify-between items-center">
+            <li
+              key={i}
+              className="text-xs text-gray-600 flex justify-between items-center"
+            >
               <span>{f.name}</span>
               <div className="flex items-center gap-2">
-                <span className="text-gray-400">{(f.size / 1024).toFixed(0)} KB</span>
+                <span className="text-gray-400">
+                  {(f.size / 1024).toFixed(0)} KB
+                </span>
                 <button
                   type="button"
                   onClick={() => removeFile(i)}
