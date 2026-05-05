@@ -16,7 +16,6 @@ function Skeleton({ className = "" }: { className?: string }) {
 function DashboardSkeleton() {
   return (
     <div className="flex flex-col gap-6 sm:gap-10" aria-label="Loading dashboard…">
-      {/* Header skeleton */}
       <div className="border-b-2 border-gray-200 pb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div className="flex flex-col gap-3">
           <Skeleton className="h-8 w-56 sm:w-72" />
@@ -24,11 +23,7 @@ function DashboardSkeleton() {
         </div>
         <Skeleton className="h-12 w-36 sm:w-40" />
       </div>
-
-      {/* Trust indicator skeleton */}
       <Skeleton className="h-8 w-full max-w-lg" />
-
-      {/* Stat cards skeleton */}
       <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
         {[0, 1, 2].map((i) => (
           <div key={i} className="p-4 sm:p-6 flex flex-col gap-4 bg-white">
@@ -37,10 +32,21 @@ function DashboardSkeleton() {
           </div>
         ))}
       </div>
-
-      {/* Dispute list skeleton */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <div className="min-w-[500px]">
+      <div className="md:hidden space-y-4">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div className="flex justify-between items-start mb-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-3 w-12" />
+            </div>
+            <Skeleton className="h-5 w-full mb-2" />
+            <Skeleton className="h-3 w-28 mb-4" />
+            <Skeleton className="h-8 w-full rounded-md" />
+          </div>
+        ))}
+      </div>
+      <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200">
+        <div className="min-w-full">
           {[0, 1, 2].map((i) => (
             <div key={i} className="p-4 flex gap-3 border-b border-gray-100">
               <Skeleton className="h-4 w-6" />
@@ -82,6 +88,7 @@ export default function Dashboard() {
   const [activeDisputes, setActiveDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -105,12 +112,11 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-screen bg-(--color-bg-off-white) font-sans">
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 md:ml-64">
-        <DashboardTopNav />
+        <DashboardTopNav onMenuClick={() => setSidebarOpen(true)} />
         <div className="pt-6 sm:pt-10 pb-8 sm:pb-16 px-4 sm:px-6 lg:px-8 xl:px-16">
           <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6 lg:gap-12">
-            {/* Main column */}
             <div className="flex-1 flex flex-col gap-6">
               {loading ? (
                 <DashboardSkeleton />
@@ -128,8 +134,6 @@ export default function Dashboard() {
                 </>
               )}
             </div>
-
-            {/* Sidebar */}
             <EducationalSidebar recentAgreements={loading ? [] : []} />
           </div>
         </div>
