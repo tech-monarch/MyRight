@@ -8,9 +8,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
 
-VitePWA({
-  registerType: "autoUpdate",
-  includeAssets: ["pwa-192x192.png", "pwa-512x512.png"]
-})
+  VitePWA({
+    registerType: "autoUpdate",
+    includeAssets: ["pwa-192x192.png", "pwa-512x512.png"]
+  })
   ],
 });
