@@ -8,22 +8,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
 
-    VitePWA({
-      registerType: "autoUpdate",
-
-      manifest: {
-        name: "MyRight",
-        short_name: "MyRight",
-        description: "MyRight dispute resolution app",
-        theme_color: "#ffffff",
-        background_color: "#ffffff",
-        display: "standalone",
-        start_url: "/",
-        icons: [
-          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
-        ],
-      },
-    }),
+VitePWA({
+  registerType: "autoUpdate",
+  includeAssets: ["pwa-192x192.png", "pwa-512x512.png"]
+})
   ],
 });
