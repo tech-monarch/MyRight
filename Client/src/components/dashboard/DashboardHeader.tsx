@@ -1,25 +1,24 @@
 import { RiAddCircleLine, RiCalendarLine } from "react-icons/ri";
 import { format } from "date-fns";
-import type { User } from "../../types/types";
 import { paths } from "../../../utils/paths";
 import { Link } from "react-router-dom";
 import { useChatStore } from "../../store";
+import { useAuth } from "../../hooks/useAuth"; // add this import
 
-interface DashboardHeaderProps {
-  user: User | null;
-}
-
-export default function DashboardHeader({ user }: DashboardHeaderProps) {
+export default function DashboardHeader() {
+  const { user } = useAuth(); // get user directly
   const today = format(new Date(), "EEEE, d MMMM yyyy");
-  const fullName = user?.fullName || "Guest";
   const resetChat = useChatStore((state) => state.resetChat);
+  
+  // Same logic as sidebar
+  const displayName = user?.user_metadata?.name || user?.email?.split("@")[0] || "Guest";
 
   return (
     <div className="border-b-2 border-(--color-primary-navy) pb-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-(--color-primary-navy) leading-tight tracking-tight">
-            Welcome back, {fullName}!
+            Welcome back, {displayName}!
           </h1>
           <div className="flex items-center gap-2 mt-3 text-(--color-text-muted)">
             <RiCalendarLine className="w-3.5 h-3.5" />

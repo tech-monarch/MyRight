@@ -5,6 +5,7 @@ export const saveUser = (user: User) => db.users.add(user)
 
 export const getUser = (id: number) => db.users.get(id)
 
+
 export const updateUser = (id: number, changes: Partial<User>) =>
   db.users.update(id, { ...changes, updatedAt: new Date() })
 

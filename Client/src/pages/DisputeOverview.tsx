@@ -231,11 +231,11 @@ export default function DisputeOverview() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                           <button
-                            onClick={() => navigate(`/dispute/${dispute.id}/chat`)}
+                            onClick={() => navigate(`/ai/${dispute.id}`, { state: { dispute } })}
                             className="text-blue-600 hover:text-blue-800"
-                          >
+                            >
                             Chat
-                          </button>
+                            </button>
                           <button
                             onClick={() => navigate(`/dispute/${dispute.id}`)}
                             className="text-green-600 hover:text-green-800"

@@ -82,4 +82,22 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
   }
 })
 
+// DELETE /api/chats/:id
+router.delete('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { error } = await supabase
+      .from('chat_sessions')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', req.user.id);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Delete chat session error:', error);
+    res.status(500).json({ error: 'Failed to delete chat session' });
+  }
+});
+
 export default router

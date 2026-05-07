@@ -97,8 +97,40 @@ Return ONLY the JSON object. No explanations before or after.`
       localResources: parsed.localResources || null
     }
 
-    // Optionally save analysis to database? Could store in a new table `dispute_analyses`
-    // For now, just return.
+    // ===== NEW: Save the dispute immediately =====
+    let disputeId: string | null = null
+    try {
+      const { data: inserted, error: insertError } = await supabase
+        .from('mediation_requests')
+        .insert({
+          user_id: req.user.id,
+          description,
+          category: category || 'Other',          // fallback if empty
+          file_urls: fileUrls || [],
+          analysis_result: responseData,
+          status: 'analysis_completed',           // new status – not yet invited
+          opponent_name: null,                    // empty, will be filled later
+          opponent_email: null,
+          opponent_phone: null,
+          opponent_organization: null,
+        })
+        .select('id')
+        .single()
+
+      if (insertError) {
+        console.error('Failed to save dispute record after analysis:', insertError)
+      } else if (inserted) {
+        disputeId = inserted.id
+        console.log(`Dispute record created with ID: ${disputeId}`)
+      }
+    } catch (dbErr) {
+      console.error('Unexpected error while saving dispute:', dbErr)
+    }
+
+    // Attach disputeId to the response if we have one (frontend can use it later)
+    if (disputeId) {
+      (responseData as any).disputeId = disputeId
+    }
 
     res.json(responseData)
 
