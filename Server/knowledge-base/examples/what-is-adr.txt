@@ -1,0 +1,35 @@
+[EXAMPLE PLACEHOLDER, NOT LEGAL AUTHORITY]
+
+This is a generic, non-authoritative explanation of Alternative Dispute
+Resolution (ADR) used only to demonstrate MyRight's retrieval pipeline.
+It should be replaced with real, sourced material before this system is
+used by real people. See knowledge-base/README.md.
+
+What is Alternative Dispute Resolution?
+
+Alternative Dispute Resolution, usually shortened to ADR, describes ways
+of resolving a disagreement between two or more people or organizations
+without going through a full court trial. Common forms of ADR include
+negotiation, mediation, and arbitration.
+
+Negotiation is the most informal option. The people involved discuss the
+disagreement directly, sometimes with the help of a legal representative,
+and try to reach an agreement between themselves.
+
+Mediation involves a neutral third party, a mediator, who helps both
+sides communicate and explore possible resolutions. A mediator does not
+decide the outcome, the two sides reach their own agreement with the
+mediator's guidance. Mediation is generally faster and less expensive
+than going to court, and gives both sides more control over the outcome
+than a court judgment would.
+
+Arbitration is more formal than mediation. A neutral arbitrator hears
+both sides and then makes a binding decision, similar to a judge, but
+outside the court system.
+
+General considerations when choosing between these options include: how
+urgent the matter is, whether an ongoing relationship needs to be
+preserved (mediation tends to be better for this than litigation), the
+amount in dispute relative to the cost of each process, and whether
+either side needs a legally binding, enforceable decision (which points
+toward arbitration or litigation rather than negotiation or mediation).

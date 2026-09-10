@@ -1,0 +1,31 @@
+[EXAMPLE PLACEHOLDER, NOT LEGAL AUTHORITY]
+
+This is a generic, non-authoritative description of a typical mediation
+process, used only to demonstrate MyRight's retrieval pipeline. It should
+be replaced with real, sourced material describing how a specific ADR
+institution actually runs its process before this system is used by real
+people. See knowledge-base/README.md.
+
+What generally happens during mediation
+
+Mediation processes vary between institutions, but a typical process
+looks roughly like this:
+
+1. Intake: one party requests mediation and describes the dispute.
+2. Invitation: the other party is invited to take part. Mediation is
+   normally voluntary, both sides generally need to agree to participate.
+3. Mediator assignment: a neutral mediator is assigned to the case.
+4. Preparation: each side may be asked to share relevant documents or a
+   short written summary of their position before the session.
+5. Joint session: both parties meet with the mediator, either together
+   or sometimes separately, to discuss the dispute.
+6. Negotiation: the mediator helps the parties explore possible
+   resolutions and work toward common ground.
+7. Outcome: if the parties reach an agreement, it is usually written down
+   and signed by both sides. If they do not reach an agreement, they
+   remain free to pursue other options, including court.
+
+Typical documents that help a mediation process move faster include any
+written agreement or contract between the parties, receipts or proof of
+payment, dated photographs, and copies of written communication (emails,
+text messages) between the parties about the dispute.

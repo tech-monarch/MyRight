@@ -1,0 +1,329 @@
+// MyRight database schema.
+//
+// Design notes (see README.md "Database" section for the full writeup):
+// - Courthouse scoping for lawyers/SuperAdmins is derived through
+//   CaseAssignment rather than stored redundantly on Dispute, so there is
+//   one source of truth for "which courthouse can see this case."
+// - Disputes are soft deleted (deletedAt) because dispute records may need
+//   to remain available for audit purposes even after a user requests
+//   deletion. Users are deactivated, not deleted, for the same reason.
+// - AuditLog is append only at the application layer: no update/delete
+//   route is ever exposed for it.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+enum UserRole {
+  DISPUTANT
+  LAWYER
+  SUPERADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum DisputeStatus {
+  DRAFT
+  UNDER_REVIEW
+  MEDIATION_REQUESTED
+  AWAITING_OTHER_PARTY
+  MEDIATOR_ASSIGNED
+  IN_MEDIATION
+  RESOLVED
+  WITHDRAWN
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum AuditResult {
+  SUCCESS
+  DENIED
+}
+
+model Courthouse {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+
+  @@map("courthouses")
+}
+
+// A single table covers all three roles rather than separate Disputant /
+// Lawyer / SuperAdmin tables. The roles share enough shape (credentials,
+// status, audit trail) that splitting them would just mean joining them
+// back together everywhere; `role` plus the nullable lawyer-only fields is
+// simpler to reason about and query.
+model User {
+  id                 String     @id @default(cuid())
+  role               UserRole
+  status             UserStatus @default(ACTIVE)
+  name               String
+  email              String?    @unique
+  // Only lawyers/SuperAdmins log in by username; disputants use email.
+  username           String?    @unique
+  phone              String?
+  passwordHash       String
+  mustChangePassword Boolean    @default(false)
+  specialization     String?
+  courthouseId       String?
+  courthouse         Courthouse? @relation(fields: [courthouseId], references: [id])
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  sessions          Session[]
+  disputes          Dispute[]         @relation("DisputeOwner")
+  assignments       CaseAssignment[]  @relation("LawyerAssignments")
+  assignmentsMade   CaseAssignment[]  @relation("AssignedBy")
+  uploadedDocuments Document[]
+  statusChanges     DisputeStatusHistory[]
+
+  @@index([courthouseId])
+  @@map("users")
+}
+
+// Sessions are stored server side (a token row per login) rather than
+// stateless JWTs, so a SuperAdmin action like "deactivate this lawyer" or
+// a user's own "log out everywhere" takes effect immediately instead of
+// waiting for a token to expire. Only a hash of the token is stored, the
+// raw token only ever lives in the httpOnly cookie.
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String   @unique
+  userAgent    String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Dispute {
+  id                 String        @id @default(cuid())
+  ownerId            String
+  owner              User          @relation("DisputeOwner", fields: [ownerId], references: [id])
+  title              String
+  description        String
+  type               String
+  otherPartyName     String?
+  otherPartyContact  String?
+  desiredOutcome     String?
+  status             DisputeStatus @default(DRAFT)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  deletedAt          DateTime?
+
+  assignment    CaseAssignment?
+  documents     Document[]
+  statusHistory DisputeStatusHistory[]
+  chatMessages  ChatMessage[]
+  aiAnalyses    AIAnalysis[]
+
+  @@index([ownerId])
+  @@map("disputes")
+}
+
+model DisputeStatusHistory {
+  id         String        @id @default(cuid())
+  disputeId  String
+  dispute    Dispute       @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  status     DisputeStatus
+  note       String?
+  changedById String?
+  changedBy  User?         @relation(fields: [changedById], references: [id])
+  createdAt  DateTime      @default(now())
+
+  @@index([disputeId])
+  @@map("dispute_status_history")
+}
+
+// One active lawyer per case is enough for the product today (see the
+// RBAC "do not overbuild" principle). disputeId is unique so assigning a
+// new lawyer replaces the row rather than accumulating history, full
+// assignment history is available through AuditLog if it's ever needed.
+model CaseAssignment {
+  id           String   @id @default(cuid())
+  disputeId    String   @unique
+  dispute      Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  lawyerId     String
+  lawyer       User     @relation("LawyerAssignments", fields: [lawyerId], references: [id])
+  assignedById String
+  assignedBy   User     @relation("AssignedBy", fields: [assignedById], references: [id])
+  assignedAt   DateTime @default(now())
+
+  @@index([lawyerId])
+  @@map("case_assignments")
+}
+
+model Document {
+  id           String         @id @default(cuid())
+  disputeId    String
+  dispute      Dispute        @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  uploaderId   String
+  uploader     User           @relation(fields: [uploaderId], references: [id])
+  fileName     String
+  storageKey   String         // Object storage key/path, never a public URL.
+  mimeType     String
+  sizeBytes    Int
+  // UPLOADED -> PROCESSING (ingestion running) -> READY (searchable by RAG)
+  // or FAILED. A document a user can already see and download does not
+  // have to be READY, ingestion only controls whether the AI assistant
+  // can retrieve its content.
+  status       DocumentStatus @default(UPLOADED)
+  ingestError  String?
+  createdAt    DateTime       @default(now())
+
+  chunks DocumentChunk[]
+
+  @@index([disputeId])
+  @@map("documents")
+}
+
+// One row per chunk of extracted text from a user-uploaded document.
+// disputeId is denormalized from Document here on purpose: retrieval
+// needs to filter "chunks belonging to disputes this user can access"
+// on every single query, and filtering a vector search directly by a
+// plain indexed column is both simpler and faster than joining through
+// Document every time. See rag/retrieval.service.ts.
+model DocumentChunk {
+  id         String                @id @default(cuid())
+  documentId String
+  document   Document              @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  disputeId  String
+  content    String
+  embedding  Unsupported("vector(768)")?
+  pageNumber Int?
+  chunkIndex Int
+  createdAt  DateTime              @default(now())
+
+  @@index([disputeId])
+  @@index([documentId])
+  @@map("document_chunks")
+}
+
+enum KnowledgeSourceType {
+  LEGISLATION
+  ADR_FRAMEWORK
+  GUIDANCE
+  CASE_LAW
+  OTHER
+}
+
+enum AuthorityLevel {
+  AUTHORITATIVE
+  INFORMATIONAL
+}
+
+// The curated legal/ADR knowledge base, kept deliberately separate from
+// user-uploaded Documents: knowledge chunks are shared across every
+// dispute (no disputeId), document chunks are private to one dispute.
+// Mixing the two tables would make it easy to accidentally leak one
+// user's uploaded evidence into another user's retrieval results.
+model KnowledgeSource {
+  id              String              @id @default(cuid())
+  title           String
+  sourceType      KnowledgeSourceType
+  authorityLevel  AuthorityLevel
+  jurisdiction    String?
+  sourceUrl       String?
+  version         String?
+  publicationDate DateTime?
+  effectiveDate   DateTime?
+  createdAt       DateTime            @default(now())
+
+  chunks KnowledgeChunk[]
+
+  @@map("knowledge_sources")
+}
+
+model KnowledgeChunk {
+  id         String                @id @default(cuid())
+  sourceId   String
+  source     KnowledgeSource       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  content    String
+  embedding  Unsupported("vector(768)")?
+  section    String?
+  pageNumber Int?
+  chunkIndex Int
+  createdAt  DateTime              @default(now())
+
+  @@index([sourceId])
+  @@map("knowledge_chunks")
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+// The dispute-scoped AI Assistant conversation. Kept as its own table
+// (not folded into DisputeStatusHistory or similar) because chat grows
+// unbounded and is read/written far more often than status changes are.
+model ChatMessage {
+  id        String   @id @default(cuid())
+  disputeId String
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  role      ChatRole
+  content   String
+  // Titles/ids of the sources cited in this message, empty for USER
+  // messages and for ASSISTANT messages that found nothing to cite.
+  sources   Json?
+  createdAt DateTime @default(now())
+
+  @@index([disputeId])
+  @@map("chat_messages")
+}
+
+// A snapshot of the structured RAG analysis at the time it was generated.
+// Disputes can be re-analyzed (e.g. after more evidence is uploaded), so
+// this is an append-only history rather than a single field on Dispute.
+model AIAnalysis {
+  id        String   @id @default(cuid())
+  disputeId String
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  result    Json
+  createdAt DateTime @default(now())
+
+  @@index([disputeId])
+  @@map("ai_analyses")
+}
+
+// Append only by convention: no route ever updates or deletes a row here.
+// actorLabel is denormalized so the log stays readable even if the actor
+// account is later deactivated or its name changes.
+model AuditLog {
+  id         String      @id @default(cuid())
+  actorId    String?
+  actorLabel String
+  action     String
+  targetType String
+  targetId   String?
+  result     AuditResult
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}
