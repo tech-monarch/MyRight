@@ -1,73 +1,66 @@
-# React + TypeScript + Vite
+# MyRight: Frontend (Milestone 7)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Next.js 14 (App Router) + TypeScript + Tailwind. This milestone wires the
+UI to the real backend (see the separate `myright-backend` project),
+mock data is gone.
 
-Currently, two official plugins are available:
+## What changed from Milestone 4
+- `src/lib/api.ts`: the real API client. Client-side only, see the note
+  at the bottom of that file for why (short version: it makes the
+  loading states honest instead of pretending Server Components are
+  fetching data they aren't).
+- `src/lib/auth-client.ts`, `disputes-client.ts`, `admin-client.ts`:
+  replace the old mock modules with real calls to the Express API.
+- `src/lib/useApi.ts`: a small shared data-fetching hook, every page that
+  needs data uses this instead of a bespoke `useEffect`.
+- `src/components/auth/RequireAuth.tsx`: client-side route protection.
+  Deliberately **not** Next.js middleware, see the comment in that file,
+  the frontend and backend run on different origins so middleware cannot
+  see the backend's session cookie. This calls `/api/auth/me` once and
+  redirects if it fails. It is a UX convenience, not a security boundary,
+  the backend enforces access control independently on every request
+  regardless of what this component decides.
+- Every page that read from the old mock arrays now fetches real data,
+  with loading and error states, and every form that used to fake a
+  network delay now calls the real backend and handles real errors.
+- The intake wizard genuinely creates a dispute, uploads evidence, and
+  runs real AI analysis, it no longer simulates any of this.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Known limitations
+- **This has not been run against a live backend.** The backend's own
+  README documents that `prisma generate` could not be verified in the
+  sandbox this was built in either. The two need to be tested together:
+  run the backend (`npm run dev` there), set `NEXT_PUBLIC_API_URL` to
+  point at it, and click through the app for real.
+- `RequireAuth`'s role check is UX only, see the comment in that file.
+  A determined user could still hit a protected page's client code
+  before the redirect fires, they would just get 401/403 responses from
+  every real API call, since the backend checks independently. This is
+  the same "frontend is not the security boundary" principle the backend
+  README already states, repeated here because it is worth being
+  explicit about on both sides.
+- Some admin/settings functionality has no backend endpoint yet
+  (courthouse name editing, disputant profile editing), those pages say
+  so directly rather than pretending to save.
+- Notifications pages are still static placeholders, there is no
+  notifications API yet (flagged as not-yet-built in the backend README
+  too).
 
-## React Compiler
+## Local development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+cp .env.local.example .env.local
+# NEXT_PUBLIC_API_URL should point at your running backend, default
+# assumes it's on http://localhost:4000
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Requires the backend (`myright-backend`) running separately, seeded
+(`npm run seed` in that project) for the sample accounts to exist.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Style note
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+No em dashes anywhere in copy or code comments, by request. Use commas,
+colons, or periods instead.
