@@ -92,3 +92,54 @@ export interface AuditLogEntry {
   result: "SUCCESS" | "DENIED";
   createdAt: string;
 }
+
+export interface AvailabilitySlot {
+  id?: string;
+  dayOfWeek: number; // 0 = Sunday .. 6 = Saturday
+  startMinute: number;
+  endMinute: number;
+}
+
+export type MediationSessionStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
+
+export interface MediationSession {
+  id: string;
+  disputeId: string;
+  lawyerId: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  meetingUrl: string | null;
+  status: MediationSessionStatus;
+  createdAt: string;
+}
+
+export interface GoogleConnectionStatus {
+  connected: boolean;
+  email: string | null;
+}
+
+export type ResolutionStatus = "AWAITING_SIGNATURES" | "FULLY_SIGNED" | "VOID";
+
+export interface ResolutionSignature {
+  id: string;
+  party: "DISPUTANT" | "OTHER_PARTY";
+  signerName: string;
+  signedAt: string;
+}
+
+export interface Resolution {
+  id: string;
+  disputeId: string;
+  terms: string;
+  status: ResolutionStatus;
+  createdAt: string;
+  signatures: ResolutionSignature[];
+}
+
+export type WhatsAppStatus = "disabled" | "disconnected" | "connecting" | "awaiting_scan" | "connected";
+
+export interface WhatsAppState {
+  status: WhatsAppStatus;
+  qrDataUrl: string | null;
+  connectedNumber: string | null;
+}

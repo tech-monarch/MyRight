@@ -25,7 +25,7 @@ function readCookie(name: string): string | null {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
 }
 

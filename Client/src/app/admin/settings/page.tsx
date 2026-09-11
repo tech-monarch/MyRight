@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { changePassword } from "@/lib/auth-client";
 import { ApiError } from "@/lib/api";
+import { WhatsAppConnectCard } from "@/components/admin/WhatsAppConnectCard";
 
 export default function AdminSettingsPage() {
   const router = useRouter();
@@ -73,6 +74,8 @@ export default function AdminSettingsPage() {
               </Button>
             </form>
           </Card>
+
+          <WhatsAppConnectCard />
 
           <Card className="bg-surface-off">
             <p className="text-sm text-text-muted">

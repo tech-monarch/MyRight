@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/DashboardTopbar";
 import { Card } from "@/components/ui/Card";
@@ -10,9 +10,21 @@ import { Button } from "@/components/ui/Button";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { changePassword } from "@/lib/auth-client";
 import { ApiError } from "@/lib/api";
+import { GoogleConnectCard } from "@/components/lawyer/GoogleConnectCard";
+import { AvailabilityEditor } from "@/components/lawyer/AvailabilityEditor";
 
 export default function LawyerSettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <LawyerSettingsContent />
+    </Suspense>
+  );
+}
+
+function LawyerSettingsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const googleResult = searchParams.get("google");
   const { data: user } = useCurrentUser();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -42,6 +54,17 @@ export default function LawyerSettingsPage() {
       <DashboardTopbar title="Settings" />
       <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
         <div className="mx-auto max-w-xl space-y-6">
+          {googleResult === "connected" && (
+            <p className="rounded-lg border border-success/30 bg-success-light px-3.5 py-2.5 text-sm text-success">
+              Google account connected.
+            </p>
+          )}
+          {googleResult === "error" && (
+            <p className="rounded-lg border border-danger/30 bg-danger-light px-3.5 py-2.5 text-sm text-danger">
+              Couldn&apos;t connect your Google account. Please try again.
+            </p>
+          )}
+
           <Card>
             <h2 className="text-base font-bold text-navy">Profile</h2>
             <p className="mt-1 text-sm text-text-muted">
@@ -54,6 +77,9 @@ export default function LawyerSettingsPage() {
               <SummaryRow label="Specialization" value={user?.specialization ?? "Not set"} />
             </div>
           </Card>
+
+          <GoogleConnectCard />
+          <AvailabilityEditor />
 
           <Card>
             <h2 className="text-base font-bold text-navy">Password</h2>

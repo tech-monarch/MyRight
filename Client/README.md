@@ -1,8 +1,22 @@
-# MyRight: Frontend (Milestone 7)
+# MyRight: Frontend (Milestone 8)
 
 Next.js 14 (App Router) + TypeScript + Tailwind. This milestone wires the
 UI to the real backend (see the separate `myright-backend` project),
 mock data is gone.
+
+## New in this milestone
+
+- **Admin Settings**: a WhatsApp connect card (QR code, polls status
+  every 2.5s while pairing, shows the connected number once linked).
+- **Lawyer Settings**: a Google Meet connect card (redirects to Google's
+  consent screen and back) and a weekly availability editor.
+- **Case detail**: a new "Mediation" tab with a session scheduler
+  (Google Meet or a pasted link) and a resolution/e-signature panel
+  (propose terms, disputant signs in-app, a copyable link for the other
+  party if WhatsApp delivery isn't available).
+- **`/sign/[token]`**: a standalone public page (no MyRight account, no
+  sidebar) where the other party reviews the resolution terms and signs
+  by typing their name.
 
 ## What changed from Milestone 4
 - `src/lib/api.ts`: the real API client. Client-side only, see the note

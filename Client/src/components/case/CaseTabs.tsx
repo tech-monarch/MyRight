@@ -7,9 +7,11 @@ import { ChatPanel } from "@/components/chat/ChatPanel";
 import { CaseTimeline } from "@/components/case/CaseTimeline";
 import { CaseDocuments } from "@/components/case/CaseDocuments";
 import { AIAnalysisPanel } from "@/components/case/AIAnalysisPanel";
+import { MediationPanel } from "@/components/case/MediationPanel";
+import { ResolutionPanel } from "@/components/case/ResolutionPanel";
 import type { Dispute } from "@/lib/types";
 
-const TABS = ["Overview", "Timeline", "Documents", "AI Assistant"] as const;
+const TABS = ["Overview", "Timeline", "Documents", "Mediation", "AI Assistant"] as const;
 type Tab = (typeof TABS)[number];
 
 export function CaseTabs({ dispute }: { dispute: Dispute }) {
@@ -43,6 +45,12 @@ export function CaseTabs({ dispute }: { dispute: Dispute }) {
           <Card>
             <CaseDocuments dispute={dispute} />
           </Card>
+        )}
+        {tab === "Mediation" && (
+          <div className="space-y-4">
+            <MediationPanel dispute={dispute} />
+            <ResolutionPanel dispute={dispute} />
+          </div>
         )}
         {tab === "AI Assistant" && (
           <Card className="p-4">
