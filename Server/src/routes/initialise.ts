@@ -1,35 +1,42 @@
-import { Router, Response } from 'express'
-import { requireAuth, AuthRequest } from '../middleware/auth'
-import { geminiModel } from '../lib/gemini'
-import { supabase } from '../lib/supabase'
+import { Router, Response } from "express";
+import { requireAuth, AuthRequest } from "../middleware/auth";
+import { geminiModel } from "../lib/gemini";
+import { prisma } from "@/infrastructure/database/prisma";
 
-const router = Router()
+const router = Router();
 
 // POST /api/initialize/analyze
-router.post('/analyze', requireAuth, async (req: AuthRequest, res: Response) => {
-  const { description, category, location, fileUrls } = req.body
+router.post(
+  "/analyze",
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const { description, category, location, fileUrls } = req.body;
 
-  if (!description || description.trim().length < 50) {
-    res.status(400).json({ error: 'Description is required and should be at least 50 characters' })
-    return
-  }
-
-  try {
-    const locationData = location || null
-
-    // Build file info string if any
-    let fileInfo = ''
-    if (fileUrls && Array.isArray(fileUrls) && fileUrls.length > 0) {
-      fileInfo = `\nThe user has uploaded ${fileUrls.length} supporting document(s): ${fileUrls.join(', ')}`
+    if (!description || description.trim().length < 50) {
+      res
+        .status(400)
+        .json({
+          error: "Description is required and should be at least 50 characters",
+        });
+      return;
     }
 
-    const prompt = `You are MyRight AI — a Nigerian dispute resolution expert specializing in mediation, arbitration, and legal guidance. Your task is to analyze a user's dispute description and produce a concise, actionable mediation roadmap.
+    try {
+      const locationData = location || null;
+
+      // Build file info string if any
+      let fileInfo = "";
+      if (fileUrls && Array.isArray(fileUrls) && fileUrls.length > 0) {
+        fileInfo = `\nThe user has uploaded ${fileUrls.length} supporting document(s): ${fileUrls.join(", ")}`;
+      }
+
+      const prompt = `You are MyRight AI — a Nigerian dispute resolution expert specializing in mediation, arbitration, and legal guidance. Your task is to analyze a user's dispute description and produce a concise, actionable mediation roadmap.
 
 The user has provided the following information:
-- Dispute category: ${category || 'Not specified'}
+- Dispute category: ${category || "Not specified"}
 - Description: ${description}
 ${fileInfo}
-${locationData ? `- User location: ${JSON.stringify(locationData)}` : ''}
+${locationData ? `- User location: ${JSON.stringify(locationData)}` : ""}
 
 You must return ONLY a valid JSON object with the following structure (no markdown, no extra text):
 
@@ -58,86 +65,82 @@ Guidelines:
 - Do not ask for more information; work with what's given.
 - If the description mentions violence or police, escalate urgency and include safety tips.
 
-Return ONLY the JSON object. No explanations before or after.`
+Return ONLY the JSON object. No explanations before or after.`;
 
-    const result = await geminiModel.generateContent(prompt)
-    const raw = result.response.text().trim()
-    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+      const result = await geminiModel.generateContent(prompt);
+      const raw = result.response.text().trim();
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
 
-    if (!jsonMatch) {
-      console.error('No JSON found in Gemini response:', raw)
-      // Fallback response
-      const fallback = {
-        summary: "Unable to analyze properly. Please provide more details.",
-        keyIssues: ["Incomplete description"],
-        relevantLaws: [],
-        ADRRecommendation: "Please rephrase your dispute with more context.",
-        nextSteps: ["Contact a legal adviser."],
-        urgencyLevel: "low",
-        estimatedDuration: "N/A",
-        riskNotes: "Insufficient information to assess risk.",
-        localResources: null
+      if (!jsonMatch) {
+        console.error("No JSON found in Gemini response:", raw);
+        // Fallback response
+        const fallback = {
+          summary: "Unable to analyze properly. Please provide more details.",
+          keyIssues: ["Incomplete description"],
+          relevantLaws: [],
+          ADRRecommendation: "Please rephrase your dispute with more context.",
+          nextSteps: ["Contact a legal adviser."],
+          urgencyLevel: "low",
+          estimatedDuration: "N/A",
+          riskNotes: "Insufficient information to assess risk.",
+          localResources: null,
+        };
+        res.json(fallback);
+        return;
       }
-      res.json(fallback)
-      return
-    }
 
-    const parsed = JSON.parse(jsonMatch[0])
+      const parsed = JSON.parse(jsonMatch[0]);
 
-    // Ensure all fields exist
-    const responseData = {
-      summary: parsed.summary || "Analysis complete.",
-      keyIssues: Array.isArray(parsed.keyIssues) ? parsed.keyIssues : [],
-      relevantLaws: Array.isArray(parsed.relevantLaws) ? parsed.relevantLaws : [],
-      ADRRecommendation: parsed.ADRRecommendation || "Consider mediation.",
-      nextSteps: Array.isArray(parsed.nextSteps) ? parsed.nextSteps : ["Document your evidence", "Seek legal advice"],
-      urgencyLevel: parsed.urgencyLevel || "low",
-      estimatedDuration: parsed.estimatedDuration || "Varies",
-      riskNotes: parsed.riskNotes || "No immediate risk detected.",
-      localResources: parsed.localResources || null
-    }
+      // Ensure all fields exist
+      const responseData = {
+        summary: parsed.summary || "Analysis complete.",
+        keyIssues: Array.isArray(parsed.keyIssues) ? parsed.keyIssues : [],
+        relevantLaws: Array.isArray(parsed.relevantLaws)
+          ? parsed.relevantLaws
+          : [],
+        ADRRecommendation: parsed.ADRRecommendation || "Consider mediation.",
+        nextSteps: Array.isArray(parsed.nextSteps)
+          ? parsed.nextSteps
+          : ["Document your evidence", "Seek legal advice"],
+        urgencyLevel: parsed.urgencyLevel || "low",
+        estimatedDuration: parsed.estimatedDuration || "Varies",
+        riskNotes: parsed.riskNotes || "No immediate risk detected.",
+        localResources: parsed.localResources || null,
+      };
 
-    // ===== NEW: Save the dispute immediately =====
-    let disputeId: string | null = null
-    try {
-      const { data: inserted, error: insertError } = await supabase
-        .from('mediation_requests')
-        .insert({
-          user_id: req.user.id,
-          description,
-          category: category || 'Other',          // fallback if empty
-          file_urls: fileUrls || [],
-          analysis_result: responseData,
-          status: 'analysis_completed',           // new status – not yet invited
-          opponent_name: null,                    // empty, will be filled later
-          opponent_email: null,
-          opponent_phone: null,
-          opponent_organization: null,
-        })
-        .select('id')
-        .single()
-
-      if (insertError) {
-        console.error('Failed to save dispute record after analysis:', insertError)
-      } else if (inserted) {
-        disputeId = inserted.id
-        console.log(`Dispute record created with ID: ${disputeId}`)
+      // ===== NEW: Save the dispute immediately =====
+      let disputeId: string | null = null;
+      try {
+        const inserted = await prisma.dispute.create({
+          data: {
+            ownerId: req.user.id,
+            title: `${category || "General"} Dispute`,
+            description,
+            type: category || "Other",
+          },
+        });
+        await prisma.aIAnalysis.create({
+          data: { disputeId: inserted.id, result: responseData },
+        });
+        disputeId = inserted.id;
+        console.log(`Dispute record created with ID: ${disputeId}`);
+      } catch (dbErr) {
+        console.error("Unexpected error while saving dispute:", dbErr);
       }
-    } catch (dbErr) {
-      console.error('Unexpected error while saving dispute:', dbErr)
+
+      // Attach disputeId to the response if we have one (frontend can use it later)
+      if (disputeId) {
+        (responseData as any).disputeId = disputeId;
+      }
+
+      res.json(responseData);
+    } catch (error: any) {
+      console.error("Initialization analysis error:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to analyze dispute. Please try again." });
     }
+  },
+);
 
-    // Attach disputeId to the response if we have one (frontend can use it later)
-    if (disputeId) {
-      (responseData as any).disputeId = disputeId
-    }
-
-    res.json(responseData)
-
-  } catch (error: any) {
-    console.error('Initialization analysis error:', error)
-    res.status(500).json({ error: 'Failed to analyze dispute. Please try again.' })
-  }
-})
-
-export default router
+export default router;

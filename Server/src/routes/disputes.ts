@@ -1,42 +1,51 @@
-import { Router, Response } from 'express'
-import { requireAuth, AuthRequest } from '../middleware/auth'
-import { geminiModel } from '../lib/gemini'
-import { supabase } from '../lib/supabase'
-import { FALLBACK_RESPONSES, detectFallbackCategory } from '../lib/fallbacks'
+import { Router, Response } from "express";
+import { requireAuth, AuthRequest } from "../middleware/auth";
+import { geminiModel } from "../lib/gemini";
+import { prisma } from "@/infrastructure/database/prisma";
+import { FALLBACK_RESPONSES, detectFallbackCategory } from "../lib/fallbacks";
 
-const router = Router()
+const router = Router();
 
 // --- Helper: location‑aware fallback
-function getLocalizedFallback(category: string, location?: { lat: number; lng: number; mapsUrl: string }) {
-  const fallback = FALLBACK_RESPONSES[category] || FALLBACK_RESPONSES.default
-  let response = fallback.aiResponse
+function getLocalizedFallback(
+  category: string,
+  location?: { lat: number; lng: number; mapsUrl: string },
+) {
+  const fallback = FALLBACK_RESPONSES[category] || FALLBACK_RESPONSES.default;
+  let response =
+    fallback?.aiResponse || FALLBACK_RESPONSES.default?.aiResponse || "";
 
   if (location) {
-    response += `\n\n📍 Your current location: ${location.mapsUrl}. For local help, open that map and search "police station", "legal aid", or "ADR centre" near you — we strongly recommend starting with mediation if safe.`
+    response += `\n\n📍 Your current location: ${location.mapsUrl}. For local help, open that map and search "police station", "legal aid", or "ADR centre" near you — we strongly recommend starting with mediation if safe.`;
   }
-  return { ...fallback, aiResponse: response }
+  return { ...fallback, aiResponse: response };
 }
 
 // POST /api/disputes/analyze
-router.post('/analyze', requireAuth, async (req: AuthRequest, res: Response) => {
-  const { description, location, mode, history } = req.body
+router.post(
+  "/analyze",
+  requireAuth,
+  async (req: AuthRequest, res: Response) => {
+    const { description, location, mode, history } = req.body;
 
-  if (!description) {
-    res.status(400).json({ error: 'Description is required' })
-    return
-  }
+    if (!description) {
+      res.status(400).json({ error: "Description is required" });
+      return;
+    }
 
-  try {
-    const locationData = location || null
+    try {
+      const locationData = location || null;
 
-    // ── CHAT MODE (unchanged, professional & warm) ──────────────────────────
-    if (mode === 'chat') {
-      const conversationHistory = (history || [])
-        .map((m: { role: string; content: string }) =>
-          `${m.role === 'user' ? 'User' : 'MyRight AI'}: ${m.content}`)
-        .join('\n')
+      // ── CHAT MODE (unchanged, professional & warm) ──────────────────────────
+      if (mode === "chat") {
+        const conversationHistory = (history || [])
+          .map(
+            (m: { role: string; content: string }) =>
+              `${m.role === "user" ? "User" : "MyRight AI"}: ${m.content}`,
+          )
+          .join("\n");
 
-      const chatPrompt = `You are MyRight AI — a professional, warm, and knowledgeable legal and dispute resolution assistant in Nigeria. You speak with respect and genuine care.
+        const chatPrompt = `You are MyRight AI — a professional, warm, and knowledgeable legal and dispute resolution assistant in Nigeria. You speak with respect and genuine care.
 
 Guidelines:
 - Be professional (accurate, clear, responsible) but also warm and welcoming — like a trusted advisor who truly wants to help.
@@ -49,25 +58,27 @@ Guidelines:
 - **Important**: If the user seems ready to resolve a dispute or asks how to proceed formally, you can kindly say: "If you want to resolve this dispute, type RESOLVE ISSUE and I'll show you a button to continue." Use this only when appropriate.
 
 Conversation so far:
-${conversationHistory ? conversationHistory : '(No previous conversation)'}
+${conversationHistory ? conversationHistory : "(No previous conversation)"}
 
 User: ${description}
-MyRight AI:`
+MyRight AI:`;
 
-      const result = await geminiModel.generateContent(chatPrompt)
-      const reply  = result.response.text().trim()
+        const result = await geminiModel.generateContent(chatPrompt);
+        const reply = result.response.text().trim();
 
-      res.json({ mode: 'chat', chatReply: reply })
-      return
-    }
+        res.json({ mode: "chat", chatReply: reply });
+        return;
+      }
 
-    // ── ANALYZE MODE (ROBUST PROMPT – EXACTLY AS USER PROVIDED) ─────────────
-    const conversationHistory = (history || [])
-      .map((m: { role: string; content: string }) =>
-        `${m.role === 'user' ? 'User' : 'MyRight AI'}: ${m.content}`)
-      .join('\n')
+      // ── ANALYZE MODE (ROBUST PROMPT – EXACTLY AS USER PROVIDED) ─────────────
+      const conversationHistory = (history || [])
+        .map(
+          (m: { role: string; content: string }) =>
+            `${m.role === "user" ? "User" : "MyRight AI"}: ${m.content}`,
+        )
+        .join("\n");
 
-const prompt = `YOU MUST RETURN ONLY A RAW JSON OBJECT. NO MARKDOWN. NO EXPLANATION. NO TEXT BEFORE OR AFTER. START WITH { END WITH }.
+      const prompt = `YOU MUST RETURN ONLY A RAW JSON OBJECT. NO MARKDOWN. NO EXPLANATION. NO TEXT BEFORE OR AFTER. START WITH { END WITH }.
 
 You are MyRight AI — a Nigerian legal crisis and ADR assistant. Your PRIMARY mission is to guide people toward Alternative Dispute Resolution (mediation, arbitration, negotiation) whenever possible. Secondary mission: emergency safety.
 
@@ -171,11 +182,15 @@ WRITING RULES
 - summary: one sentence, factual. For greetings, use "User initiated conversation."
 
 ═══════════════════════════════
-${locationData ? `USER LOCATION DETECTED:
+${
+  locationData
+    ? `USER LOCATION DETECTED:
 Latitude: ${locationData.lat}
 Longitude: ${locationData.lng}
 Google Maps: ${locationData.mapsUrl}
-Accuracy: ~${Math.round(locationData.accuracy)}m` : 'USER LOCATION: Not available — do not reference location in response'}
+Accuracy: ~${Math.round(locationData.accuracy)}m`
+    : "USER LOCATION: Not available — do not reference location in response"
+}
 ═══════════════════════════════
 
 RETURN THIS EXACT JSON STRUCTURE — NO DEVIATIONS:
@@ -194,103 +209,102 @@ RETURN THIS EXACT JSON STRUCTURE — NO DEVIATIONS:
 
 DISPUTE: ${description}
 
-FINAL REMINDER: YOUR ENTIRE RESPONSE IS THE JSON OBJECT ONLY. NOTHING ELSE.`
+FINAL REMINDER: YOUR ENTIRE RESPONSE IS THE JSON OBJECT ONLY. NOTHING ELSE.`;
 
-    const result    = await geminiModel.generateContent(prompt)
-    const raw       = result.response.text().trim()
-    const jsonMatch = raw.match(/\{[\s\S]*\}/)
+      const result = await geminiModel.generateContent(prompt);
+      const raw = result.response.text().trim();
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
 
-    if (!jsonMatch) {
-      console.error('No JSON found in Gemini response:', raw)
-      const fallbackCategory = detectFallbackCategory(description)
-      const localized = getLocalizedFallback(fallbackCategory, locationData)
-      res.json(localized)
-      return
+      if (!jsonMatch) {
+        console.error("No JSON found in Gemini response:", raw);
+        const fallbackCategory = detectFallbackCategory(description);
+        const localized = getLocalizedFallback(fallbackCategory, locationData);
+        res.json(localized);
+        return;
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      // Ensure all required fields exist (fallback defaults)
+      const responseData = {
+        category: parsed.category || "Other",
+        recommendation: parsed.recommendation || "Chat",
+        urgency: parsed.urgency || "low",
+        summary: parsed.summary || description.slice(0, 80),
+        lawReference: parsed.lawReference || "",
+        safetyTip: parsed.safetyTip || "",
+        contacts: Array.isArray(parsed.contacts) ? parsed.contacts : [],
+        needsMoreInfo: parsed.needsMoreInfo === true,
+        followUpQuestions: Array.isArray(parsed.followUpQuestions)
+          ? parsed.followUpQuestions
+          : [],
+        aiResponse:
+          parsed.aiResponse ||
+          "I'm here to help. Could you share a bit more detail?",
+      };
+
+      // Inject location into safetyTip if missing and location exists (for emergencies)
+      if (
+        locationData &&
+        responseData.urgency !== "low" &&
+        !responseData.safetyTip.includes(locationData.mapsUrl)
+      ) {
+        responseData.safetyTip += `\n📍 Share your live location: ${locationData.mapsUrl}`;
+      }
+
+      res.json(responseData);
+    } catch (error: any) {
+      console.error("Gemini error:", error);
+      const fallbackCategory = detectFallbackCategory(req.body.description);
+      const localized = getLocalizedFallback(
+        fallbackCategory,
+        req.body.location,
+      );
+      res.status(200).json(localized);
     }
-
-    const parsed = JSON.parse(jsonMatch[0])
-
-    // Ensure all required fields exist (fallback defaults)
-    const responseData = {
-      category: parsed.category || 'Other',
-      recommendation: parsed.recommendation || 'Chat',
-      urgency: parsed.urgency || 'low',
-      summary: parsed.summary || description.slice(0, 80),
-      lawReference: parsed.lawReference || '',
-      safetyTip: parsed.safetyTip || '',
-      contacts: Array.isArray(parsed.contacts) ? parsed.contacts : [],
-      needsMoreInfo: parsed.needsMoreInfo === true,
-      followUpQuestions: Array.isArray(parsed.followUpQuestions) ? parsed.followUpQuestions : [],
-      aiResponse: parsed.aiResponse || "I'm here to help. Could you share a bit more detail?",
-    }
-
-    // Inject location into safetyTip if missing and location exists (for emergencies)
-    if (locationData && responseData.urgency !== 'low' && !responseData.safetyTip.includes(locationData.mapsUrl)) {
-      responseData.safetyTip += `\n📍 Share your live location: ${locationData.mapsUrl}`
-    }
-
-    res.json(responseData)
-
-  } catch (error: any) {
-    console.error('Gemini error:', error)
-    const fallbackCategory = detectFallbackCategory(req.body.description)
-    const localized = getLocalizedFallback(fallbackCategory, req.body.location)
-    res.status(200).json(localized)
-  }
-})
+  },
+);
 
 // POST /api/disputes/submit (unchanged)
-router.post('/submit', requireAuth, async (req: AuthRequest, res: Response) => {
-  const { title, description, category, opponentName, opponentContact } = req.body
+router.post("/submit", requireAuth, async (req: AuthRequest, res: Response) => {
+  const { title, description, category, opponentName, opponentContact } =
+    req.body;
 
   if (!description || !opponentName || !opponentContact) {
-    res.status(400).json({ error: 'Missing required fields' })
-    return
+    res.status(400).json({ error: "Missing required fields" });
+    return;
   }
 
   try {
-    const { data, error } = await supabase
-      .from('cases')
-      .insert({
-        title:            title || `${category || 'General'} Dispute`,
+    const data = await prisma.dispute.create({
+      data: {
+        ownerId: req.user.id,
+        title: title || `${category || "General"} Dispute`,
         description,
-        category:         category || 'Other',
-        status:           'open',
-        type:             'dispute',
-        user_id:          req.user.id,
-        opponent_name:    opponentName,
-        opponent_contact: opponentContact,
-      })
-      .select()
-      .single()
-
-    if (error) throw error
-
-    res.json({ success: true, case: data })
-
+        type: category || "Other",
+        otherPartyName: opponentName,
+        otherPartyContact: opponentContact,
+      },
+    });
+    res.json({ success: true, case: data });
   } catch (error: any) {
-    console.error('Supabase error:', error)
-    res.status(500).json({ error: 'Failed to submit dispute' })
+    console.error("Postgres error:", error);
+    res.status(500).json({ error: "Failed to submit dispute" });
   }
-})
+});
 
 // GET /api/disputes (unchanged)
-router.get('/', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get("/", requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const { data, error } = await supabase
-      .from('cases')
-      .select('*')
-      .eq('user_id', req.user.id)
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
-
-    res.json({ cases: data })
-
+    const data = await prisma.dispute.findMany({
+      where: { ownerId: req.user.id, deletedAt: null },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json({ cases: data });
   } catch (error: any) {
-    console.error('Fetch disputes error:', error)
-    res.status(500).json({ error: 'Failed to fetch disputes' })
+    console.error("Fetch disputes error:", error);
+    res.status(500).json({ error: "Failed to fetch disputes" });
   }
-})
+});
 
-export default router
+export default router;
