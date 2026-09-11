@@ -3,16 +3,25 @@ import QRCode from "qrcode";
 import { env } from "@/config/env";
 import type { NotificationProvider, NotificationResult } from "@/infrastructure/notifications/notification.provider";
 
-// Baileys is CommonJS with a slightly unusual export shape, requiring it
-// this way (rather than a normal ESM-style default import) avoids a
-// "makeWASocket is not a function" surprise depending on the TS/module
-// interop settings, cheaper than debugging that twice.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const baileys = require("@whiskeysockets/baileys");
-const makeWASocket = baileys.default ?? baileys.makeWASocket;
-const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = baileys;
-
 export type WhatsAppStatus = "disabled" | "disconnected" | "connecting" | "awaiting_scan" | "connected";
+
+/**
+ * Baileys is intentionally NOT imported at the top of this file. It's an
+ * optionalDependency (see package.json, its own libsignal dependency is
+ * a raw GitHub reference some npm configs refuse to fetch), so it may
+ * not be installed at all in a given environment. Loading it lazily,
+ * only when a connection is actually attempted, means the rest of the
+ * server boots and runs fine with WHATSAPP_ENABLED=false even if Baileys
+ * was never installed, a top-level `require` would crash the entire
+ * process on startup instead.
+ */
+function loadBaileys() {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const baileys = require("@whiskeysockets/baileys");
+  const makeWASocket = baileys.default ?? baileys.makeWASocket;
+  const { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = baileys;
+  return { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion };
+}
 
 /**
  * A real, live WhatsApp Web connection, not a stateless API client. This
@@ -61,8 +70,24 @@ class WhatsAppProvider implements NotificationProvider {
     this.starting = null;
   }
 
+  private connectionModule: ReturnType<typeof loadBaileys> | null = null;
+
   private async connect(): Promise<void> {
     this.status = "connecting";
+
+    try {
+      this.connectionModule = this.connectionModule ?? loadBaileys();
+    } catch {
+      this.status = "disconnected";
+      console.error(
+        "WhatsApp is enabled (WHATSAPP_ENABLED=true) but the @whiskeysockets/baileys package " +
+          "isn't installed. It's an optional dependency (see package.json), install it explicitly " +
+          "with: npm install @whiskeysockets/baileys"
+      );
+      return;
+    }
+
+    const { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } = this.connectionModule;
     const authDir = join(process.cwd(), env.WHATSAPP_AUTH_DIR);
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
     const { version } = await fetchLatestBaileysVersion();
@@ -94,7 +119,7 @@ class WhatsAppProvider implements NotificationProvider {
 
       if (connection === "close") {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
-        const loggedOut = statusCode === DisconnectReason?.loggedOut;
+        const loggedOut = statusCode === this.connectionModule?.DisconnectReason?.loggedOut;
         this.status = "disconnected";
         this.connectedNumber = null;
 

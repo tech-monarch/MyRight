@@ -46,6 +46,20 @@ for just the diff.
   Every send attempt, success, failure, or skipped (no phone on file, not
   connected), is logged to `NotificationLog`.
 
+  **Installed as an `optionalDependency`, not a regular one.** Baileys'
+  own `package.json` pulls its `libsignal` dependency straight from
+  GitHub (`libsignal: "github:WhiskeySockets/libsignal-node"`) rather
+  than the npm registry, some npm configs (corporate proxies, certain CI
+  environments) refuse to fetch git-based dependencies at all and will
+  abort `npm install` entirely over this one package. Marking it optional
+  means `npm install` succeeds (with a warning) even where that fetch
+  fails, and the code loads Baileys lazily at runtime
+  (`loadBaileys()` inside `whatsapp.provider.ts`) rather than at import
+  time, so the rest of the server is unaffected either way. If you hit
+  this and actually want WhatsApp notifications, install it explicitly
+  once your npm config allows git dependencies:
+  `npm install @whiskeysockets/baileys`.
+
 ### New environment variables
 
 See `.env.example` for the full list. At minimum for these features:
