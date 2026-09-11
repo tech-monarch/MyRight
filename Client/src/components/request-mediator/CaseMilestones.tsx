@@ -35,7 +35,7 @@ export default function CaseMilestones() {
 
         {/* Step 3: Request Mediator (Active) */}
         <div className="flex items-start gap-4 mb-8 relative">
-          <div className="w-6 h-6 rounded-full bg-white border-[2px] border-primary-navy flex items-center justify-center shrink-0 z-10 relative">
+          <div className="w-6 h-6 rounded-full bg-white border-2 border-primary-navy flex items-center justify-center shrink-0 z-10 relative">
             <div className="w-2 h-2 rounded-full bg-primary-navy"></div>
           </div>
           <div className="flex flex-col pt-0.5">
@@ -46,7 +46,7 @@ export default function CaseMilestones() {
 
         {/* Step 4: Scheduling (Upcoming) */}
         <div className="flex items-start gap-4 relative">
-          <div className="w-6 h-6 rounded-full bg-white border-[2px] border-[#eaedf3] flex items-center justify-center shrink-0 z-10 relative">
+          <div className="w-6 h-6 rounded-full bg-white border-2 border-[#eaedf3] flex items-center justify-center shrink-0 z-10 relative">
           </div>
           <div className="flex flex-col pt-0.5">
             <span className="text-[13px] font-medium text-gray-400 mb-0.5 leading-none">Scheduling</span>
