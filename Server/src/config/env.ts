@@ -4,13 +4,24 @@ import "dotenv/config";
 // Fail fast: if a required environment variable is missing or malformed,
 // the app should refuse to start rather than run with an undefined secret.
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
   PORT: z.coerce.number().default(4000),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   SESSION_COOKIE_NAME: z.string().default("myright_session"),
   CSRF_COOKIE_NAME: z.string().default("myright_csrf"),
   SESSION_TTL_DAYS: z.coerce.number().default(14),
-  CLIENT_ORIGIN: z.string().url().default("http://localhost:3000"),
+  CLIENT_ORIGIN: z
+    .string()
+    .default("http://localhost:3000")
+    .transform((value) =>
+      value
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.string().url()).min(1)),
   // Model names are env-configurable on purpose, Gemini's model lineup
   // changes fairly often. Verify these against
   // https://ai.google.dev/gemini-api/docs/models before deploying, the
