@@ -4,6 +4,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "tsx watch src/app.ts",
     "build": "tsc && tsc-alias",
     "start": "node dist/app.js",
