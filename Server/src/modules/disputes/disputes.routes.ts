@@ -6,6 +6,8 @@ import { requireAuth, requireRole } from "@/middleware/auth";
 import { requireCsrf } from "@/middleware/csrf";
 import { documentsRouter } from "@/modules/documents/documents.routes";
 import { ragRouter } from "@/modules/rag/rag.routes";
+import { sessionsRouter } from "@/modules/mediation/sessions.routes";
+import { resolutionRouter } from "@/modules/resolution/resolution.routes";
 
 export const disputesRouter = Router();
 
@@ -36,3 +38,5 @@ disputesRouter.post(
 
 disputesRouter.use("/:disputeId/documents", documentsRouter);
 disputesRouter.use("/:disputeId", ragRouter);
+disputesRouter.use("/:disputeId/sessions", sessionsRouter);
+disputesRouter.use("/:disputeId/resolution", resolutionRouter);

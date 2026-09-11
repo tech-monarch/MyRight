@@ -1,8 +1,96 @@
-# MyRight: Backend (Milestone 6)
+# MyRight: Backend (Milestone 8)
 
 Node.js + TypeScript + Express API, PostgreSQL via Prisma, Gemini-powered
-RAG. This replaces the old Supabase-based server, no Supabase dependency
-anywhere in this codebase.
+RAG, mediation scheduling with Google Meet, WhatsApp notifications, and
+e-signature. This replaces the old Supabase-based server, no Supabase
+dependency anywhere in this codebase.
+
+## Verified against a real database
+
+A real `prisma migrate dev` run (by the project owner, not in the sandbox
+this was built in) confirmed the Milestone 6 schema, including the
+pgvector extension and every RAG table, migrates cleanly against actual
+PostgreSQL. That migration is checked in at
+`prisma/migrations/20260911092150_init`. The models added in this
+milestone (mediation, resolution, notifications) are not in it yet,
+running `npx prisma migrate dev` again will generate a second migration
+for just the diff.
+
+## What's in this milestone (on top of Milestones 5-7)
+
+- **Mediator scheduling** (`modules/mediation/`): a lawyer sets recurring
+  weekly availability (`MediatorAvailability`), and a `MediationSession`
+  can be scheduled for a case once a mediator is assigned. Scheduling a
+  session automatically advances the case to `IN_MEDIATION`.
+- **Google Meet** (`infrastructure/google/`): a lawyer connects their own
+  Google account via OAuth (refresh token encrypted at rest with
+  AES-256-GCM, see `utils/encryption.ts`), then session creation can ask
+  Google Calendar to auto-attach a Meet link (`conferenceData`), there is
+  no separate "create a Meet link" API, it's a side effect of a Calendar
+  event on the mediator's own calendar. Falls back to a manually pasted
+  link if the mediator hasn't connected Google.
+- **E-signature** (`modules/resolution/`): a `Resolution`'s terms get
+  signed by the disputant (authenticated) and the other party (via a
+  single-use, hashed, expiring token link, they have no MyRight account).
+  Both signatures present moves the case to `RESOLVED`. This is a typed
+  name + timestamp + IP signature, not a cryptographic digital signature,
+  see the schema comment on `ResolutionSignature`, worth being honest
+  with users about what "signing" means here.
+- **WhatsApp notifications** (`infrastructure/notifications/`): via
+  Baileys (`@whiskeysockets/baileys`), **read the caveats in
+  `whatsapp.provider.ts` before enabling this**. Short version: it's not
+  an official API, a real WhatsApp number gets linked by scanning a QR
+  code (SuperAdmin does this from the admin dashboard), it's against
+  WhatsApp's terms of service, and it needs a persistent process, not a
+  stateless request/response. Off by default (`WHATSAPP_ENABLED=false`).
+  Every send attempt, success, failure, or skipped (no phone on file, not
+  connected), is logged to `NotificationLog`.
+
+### New environment variables
+
+See `.env.example` for the full list. At minimum for these features:
+`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` (Google
+Meet), `ENCRYPTION_KEY` (required before any Google account can be
+connected), `WHATSAPP_ENABLED` + `WHATSAPP_AUTH_DIR` (WhatsApp), `APP_URL`
+(used to build the resolution signing link and the Google OAuth redirect
+back to the frontend).
+
+### New endpoints
+
+```
+GET    /api/mediation/availability/me           (lawyer's own availability)
+PUT    /api/mediation/availability/me            (replace it)
+GET    /api/mediation/availability/:lawyerId
+GET    /api/mediation/google/status              (lawyer)
+POST   /api/mediation/google/connect             (lawyer, returns a Google OAuth URL)
+GET    /api/mediation/google/callback            (not authenticated, see the comment in google-oauth.ts on why)
+POST   /api/mediation/google/disconnect
+
+GET    /api/disputes/:disputeId/sessions
+POST   /api/disputes/:disputeId/sessions         (mediator/SuperAdmin only)
+POST   /api/disputes/:disputeId/sessions/:id/cancel
+
+GET    /api/disputes/:disputeId/resolution
+POST   /api/disputes/:disputeId/resolution       (owner or mediator, returns a one-time signingUrl)
+POST   /api/disputes/:disputeId/resolution/sign  (disputant only)
+GET    /api/sign/:token                          (public, the other party's signing page)
+POST   /api/sign/:token                          (public)
+
+GET    /api/admin/whatsapp/status                (SuperAdmin)
+POST   /api/admin/whatsapp/connect               (starts pairing, poll /status for the QR code)
+POST   /api/admin/whatsapp/disconnect
+```
+
+## Known limitation specific to this milestone
+
+None of the mediation/Google/resolution/WhatsApp code above has been run
+against a live environment yet (unlike the Milestone 5/6 schema, which
+now has that real migration proving it out). The same request from
+Milestone 5/6 stands, more so here given the OAuth flow and Baileys'
+stateful connection: please treat the first real run of these features
+as a genuine test, not a formality.
+
+---
 
 ## What's in this milestone
 

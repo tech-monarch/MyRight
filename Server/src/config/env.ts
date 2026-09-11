@@ -4,24 +4,13 @@ import "dotenv/config";
 // Fail fast: if a required environment variable is missing or malformed,
 // the app should refuse to start rather than run with an undefined secret.
 const envSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "test", "production"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(4000),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   SESSION_COOKIE_NAME: z.string().default("myright_session"),
   CSRF_COOKIE_NAME: z.string().default("myright_csrf"),
   SESSION_TTL_DAYS: z.coerce.number().default(14),
-  CLIENT_ORIGIN: z
-    .string()
-    .default("http://localhost:3000")
-    .transform((value) =>
-      value
-        .split(",")
-        .map((origin) => origin.trim())
-        .filter(Boolean),
-    )
-    .pipe(z.array(z.string().url()).min(1)),
+  CLIENT_ORIGIN: z.string().url().default("http://localhost:3000"),
   // Model names are env-configurable on purpose, Gemini's model lineup
   // changes fairly often. Verify these against
   // https://ai.google.dev/gemini-api/docs/models before deploying, the
@@ -36,6 +25,26 @@ const envSchema = z.object({
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_ENDPOINT: z.string().optional(),
+
+  // Google OAuth, used only for a mediator to connect their calendar for
+  // Meet link creation. Leave unset to develop without this feature,
+  // routes that need it fail with a clear error rather than crashing at
+  // startup.
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().optional(),
+
+  // 32-byte key (as 64 hex chars) used to encrypt Google refresh tokens
+  // at rest. Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+  ENCRYPTION_KEY: z.string().optional(),
+
+  // WhatsApp via Baileys (see infrastructure/notifications/whatsapp.provider.ts).
+  // Off by default, since it requires scanning a QR code to link a real
+  // WhatsApp number, not just an env var, see that file and the README.
+  WHATSAPP_ENABLED: z.coerce.boolean().default(false),
+  WHATSAPP_AUTH_DIR: z.string().default("./whatsapp-auth"),
+
+  APP_URL: z.string().url().default("http://localhost:3000"),
 });
 
 const parsed = envSchema.safeParse(process.env);

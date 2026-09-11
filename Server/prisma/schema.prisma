@@ -95,6 +95,10 @@ model User {
   assignmentsMade   CaseAssignment[]  @relation("AssignedBy")
   uploadedDocuments Document[]
   statusChanges     DisputeStatusHistory[]
+  availability      MediatorAvailability[] @relation("LawyerAvailability")
+  mediationSessions MediationSession[]     @relation("MediatorSessions")
+  googleAccount     GoogleAccountConnection?
+  resolutionsCreated Resolution[]
 
   @@index([courthouseId])
   @@map("users")
@@ -139,6 +143,8 @@ model Dispute {
   statusHistory DisputeStatusHistory[]
   chatMessages  ChatMessage[]
   aiAnalyses    AIAnalysis[]
+  mediationSessions MediationSession[]
+  resolutions       Resolution[]
 
   @@index([ownerId])
   @@map("disputes")
@@ -307,6 +313,180 @@ model AIAnalysis {
 
   @@index([disputeId])
   @@map("ai_analyses")
+}
+
+// ---------------------------------------------------------------------
+// Mediation scheduling, Google Meet, e-signature, notifications
+// ---------------------------------------------------------------------
+
+// A lawyer's recurring weekly availability, expressed as minutes from
+// midnight (Africa/Lagos, UTC+1, no DST to worry about) rather than
+// absolute datetimes, since "Mondays 9-11am" repeats indefinitely and
+// storing it as recurring rows is simpler than generating and maintaining
+// a slot per future week.
+model MediatorAvailability {
+  id          String   @id @default(cuid())
+  lawyerId    String
+  lawyer      User     @relation("LawyerAvailability", fields: [lawyerId], references: [id], onDelete: Cascade)
+  dayOfWeek   Int      // 0 = Sunday .. 6 = Saturday
+  startMinute Int      // minutes from midnight, e.g. 540 = 9:00am
+  endMinute   Int
+  createdAt   DateTime @default(now())
+
+  @@index([lawyerId])
+  @@map("mediator_availability")
+}
+
+enum MediationSessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model MediationSession {
+  id             String                  @id @default(cuid())
+  disputeId      String
+  dispute        Dispute                 @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  lawyerId       String
+  lawyer         User                    @relation("MediatorSessions", fields: [lawyerId], references: [id])
+  scheduledStart DateTime
+  scheduledEnd   DateTime
+  // Either a Google Meet link (see GoogleAccountConnection) or a link the
+  // mediator pasted in manually, the schema doesn't distinguish, the UI
+  // just shows whichever is present.
+  meetingUrl     String?
+  googleEventId  String?
+  status         MediationSessionStatus  @default(SCHEDULED)
+  createdById    String
+  createdAt      DateTime                @default(now())
+
+  @@index([disputeId])
+  @@index([lawyerId])
+  @@map("mediation_sessions")
+}
+
+// One row per lawyer who has connected their Google account for Meet
+// link creation. Deliberately per-lawyer, not per-courthouse: the Meet
+// link is created on whichever mediator's calendar runs the session, a
+// courthouse-wide service account would need Google Workspace domain-wide
+// delegation, real infrastructure a small ADR courthouse is unlikely to
+// have, this works with any ordinary Google account.
+model GoogleAccountConnection {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleEmail          String
+  // AES-256-GCM ciphertext (see utils/encryption.ts), never the raw
+  // refresh token. A leaked database still does not hand over working
+  // Google credentials without the separate ENCRYPTION_KEY.
+  encryptedRefreshToken String
+  scope                String
+  connectedAt          DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("google_account_connections")
+}
+
+enum ResolutionStatus {
+  AWAITING_SIGNATURES
+  FULLY_SIGNED
+  VOID
+}
+
+// The terms both sides agree to. Kept separate from Dispute (rather than
+// a field on it) because it has its own lifecycle and its own signatures,
+// and because a case could in principle go through more than one draft of
+// terms before both sides accept.
+model Resolution {
+  id          String            @id @default(cuid())
+  disputeId   String
+  dispute     Dispute           @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  terms       String
+  status      ResolutionStatus  @default(AWAITING_SIGNATURES)
+  createdById String
+  createdBy   User              @relation(fields: [createdById], references: [id])
+  createdAt   DateTime          @default(now())
+
+  signatures     ResolutionSignature[]
+  signingTokens  ResolutionSigningToken[]
+
+  @@index([disputeId])
+  @@map("resolutions")
+}
+
+enum SigningParty {
+  DISPUTANT
+  OTHER_PARTY
+}
+
+// A simple "typed name + timestamp + IP" signature, not a cryptographic
+// digital signature. This is what most consumer e-sign flows actually
+// are under the hood, but it's worth being explicit: this is evidence of
+// intent to agree, not a notarized or cryptographically verifiable
+// signature, and MyRight should not claim otherwise to users. See
+// README "AI Limitations" (well, this one belongs in a "Legal
+// Limitations" section, added alongside this feature).
+model ResolutionSignature {
+  id           String       @id @default(cuid())
+  resolutionId String
+  resolution   Resolution   @relation(fields: [resolutionId], references: [id], onDelete: Cascade)
+  party        SigningParty
+  signerName   String
+  userId       String?      // set for the disputant (an authenticated User), null for the other party
+  ipAddress    String?
+  userAgent    String?
+  signedAt     DateTime     @default(now())
+
+  @@unique([resolutionId, party])
+  @@map("resolution_signatures")
+}
+
+// The other party has no MyRight account, they reach the signing page
+// through a single-use token sent by WhatsApp/email rather than logging
+// in. Same hashed-token-in-DB pattern as Session (see
+// utils/session-token.ts), for the same reason: only a hash is stored, so
+// a leaked database doesn't hand over a usable signing link.
+model ResolutionSigningToken {
+  id           String     @id @default(cuid())
+  resolutionId String
+  resolution   Resolution @relation(fields: [resolutionId], references: [id], onDelete: Cascade)
+  tokenHash    String     @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime   @default(now())
+
+  @@index([resolutionId])
+  @@map("resolution_signing_tokens")
+}
+
+enum NotificationChannel {
+  WHATSAPP
+  EMAIL
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
+// A log, not a queue, notifications are sent inline from whatever
+// triggered them (see notifications/notification.service.ts) and this
+// just records what happened. Useful for debugging "did the other party
+// actually get notified" without needing to check WhatsApp/email
+// provider dashboards.
+model NotificationLog {
+  id        String              @id @default(cuid())
+  userId    String?
+  channel   NotificationChannel
+  recipient String
+  template  String
+  status    NotificationStatus
+  error     String?
+  createdAt DateTime            @default(now())
+
+  @@index([userId])
+  @@map("notification_logs")
 }
 
 // Append only by convention: no route ever updates or deletes a row here.
