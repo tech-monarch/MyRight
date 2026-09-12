@@ -1,29 +1,30 @@
 import type { NextFunction, Request, Response } from "express";
 import { randomBytes } from "crypto";
 import { AppError } from "@/utils/AppError";
-import { env, isProduction } from "@/config/env";
+import { env } from "@/config/env";
 
 /**
  * Double-submit cookie CSRF protection.
  *
- * In development the session cookie is sameSite=lax, which already blocks
- * most cross-site request forgery on its own, this double-submit check is
- * a second layer. In production it's sameSite=none (required for a
- * frontend and backend on different domains, see cookies.ts), which
- * provides no CSRF protection at all, so this check is the *only* CSRF
- * defense there, not a backup one. It still holds up on its own: a
- * cross-site attacker's forged request carries the browser's cookies
- * automatically, but same-origin policy stops their page's JavaScript
- * from reading the CSRF cookie's value to put in the required header.
+ * When the request arrives over plain HTTP (local dev, same-site
+ * localhost), the session cookie is sameSite=lax, which already blocks
+ * most cross-site request forgery on its own, this double-submit check
+ * is a second layer. Over HTTPS in a real deployment it's
+ * sameSite=none (required whenever the frontend and backend are on
+ * different domains, see cookies.ts), which provides no CSRF protection
+ * at all, so this check is the *only* CSRF defense there, not a backup
+ * one. It still holds up on its own: a cross-site attacker's forged
+ * request carries the browser's cookies automatically, but same-origin
+ * policy stops their page's JavaScript from reading the CSRF cookie's
+ * value to put in the required header.
  */
-const sameSitePolicy = isProduction ? "none" : "lax";
-
-export function issueCsrfCookie(res: Response): string {
+export function issueCsrfCookie(req: Request, res: Response): string {
   const token = randomBytes(24).toString("hex");
+  const secure = req.secure;
   res.cookie(env.CSRF_COOKIE_NAME, token, {
     httpOnly: false,
-    secure: isProduction,
-    sameSite: sameSitePolicy,
+    secure,
+    sameSite: secure ? "none" : "lax",
     path: "/",
   });
   return token;

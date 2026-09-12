@@ -13,8 +13,8 @@ async function startSession(req: Request, res: Response, userId: string) {
     userAgent: req.header("user-agent") ?? undefined,
     ipAddress: req.ip,
   });
-  setSessionCookie(res, token, expiresAt);
-  issueCsrfCookie(res);
+  setSessionCookie(req, res, token, expiresAt);
+  issueCsrfCookie(req, res);
 }
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
