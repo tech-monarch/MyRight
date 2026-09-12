@@ -7,6 +7,14 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(4000),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  // Only needed if your Postgres provider offers a separate pooled
+  // connection string (e.g. Layerbase, Neon, Supabase). DATABASE_URL
+  // should be the pooled string the app uses at runtime, DIRECT_URL the
+  // unpooled string Prisma CLI commands (migrate, studio) use instead,
+  // since schema-changing operations don't always play well through a
+  // transaction-mode pooler. If your provider only gives you one
+  // connection string, set both to the same value.
+  DIRECT_URL: z.string().optional(),
   SESSION_COOKIE_NAME: z.string().default("myright_session"),
   CSRF_COOKIE_NAME: z.string().default("myright_csrf"),
   SESSION_TTL_DAYS: z.coerce.number().default(14),
