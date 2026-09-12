@@ -8,6 +8,7 @@ import { authRateLimiter } from "@/middleware/rateLimit";
 
 export const authRouter = Router();
 
+authRouter.get("/csrf", authController.getCsrfToken);
 authRouter.post("/register", authRateLimiter, validateBody(registerSchema), authController.register);
 authRouter.post("/login", authRateLimiter, validateBody(loginSchema), authController.login);
 authRouter.post("/logout", requireAuth, requireCsrf, authController.logout);

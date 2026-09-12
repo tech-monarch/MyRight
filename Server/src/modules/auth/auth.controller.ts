@@ -69,6 +69,23 @@ export const me = asyncHandler(async (req: Request, res: Response) => {
   res.json({ success: true, data: authService.toPublicUser(user) });
 });
 
+/**
+ * Issues the CSRF cookie and, critically, returns the same token value in
+ * the response body. A frontend on a different domain than this API
+ * cannot read the cookie itself via document.cookie (cross-origin
+ * cookies are invisible to JS regardless of httpOnly), so it has no other
+ * way to learn the value it needs to echo back in the x-csrf-token
+ * header. The cookie the browser attaches automatically and the value
+ * returned here are the same token, that's what makes the double-submit
+ * check work: an attacker's page can trigger the cookie being sent, but
+ * can't call this endpoint cross-origin and read its response (CORS
+ * blocks that) to get a matching header value.
+ */
+export const getCsrfToken = asyncHandler(async (req: Request, res: Response) => {
+  const token = issueCsrfCookie(req, res);
+  res.json({ success: true, data: { csrfToken: token } });
+});
+
 export const changePassword = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw AppError.unauthorized();
   const { currentPassword, newPassword } = req.body;

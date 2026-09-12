@@ -1,4 +1,4 @@
-import { apiFetch, ApiError } from "@/lib/api";
+import { apiFetch, ApiError, clearCachedCsrfToken } from "@/lib/api";
 import type { User } from "@/lib/types";
 
 export function roleHome(role: User["role"]): string {
@@ -33,6 +33,7 @@ export function register(data: { name: string; email: string; password: string }
 
 export async function logout(): Promise<void> {
   await apiFetch("/api/auth/logout", { method: "POST" });
+  clearCachedCsrfToken();
 }
 
 export async function getCurrentUser(): Promise<User | null> {

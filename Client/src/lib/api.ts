@@ -1,8 +1,8 @@
 /**
  * Every request to the MyRight API goes through this. It is client-side
- * only (reads document.cookie, uses the browser's fetch with
- * credentials), which is a deliberate simplification, see the note at
- * the bottom of this file for why.
+ * only (uses the browser's fetch with credentials), which is a
+ * deliberate simplification, see the note at the bottom of this file for
+ * why.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -18,15 +18,46 @@ export class ApiError extends Error {
   }
 }
 
-function readCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]!) : null;
+/**
+ * The backend's CSRF cookie is not httpOnly, but that only means JS *on
+ * the backend's own origin* could read it, this frontend runs on a
+ * different domain, and document.cookie never exposes cookies belonging
+ * to another origin regardless of the httpOnly flag. So instead of
+ * reading it locally, we ask the backend for the value directly (see
+ * GET /api/auth/csrf), cache it in memory, and echo it back in the
+ * x-csrf-token header the backend's double-submit check expects. This is
+ * safe because a page on another origin can't read this endpoint's JSON
+ * response either, CORS blocks that the same way it protects everything
+ * else here.
+ */
+let cachedCsrfToken: string | null = null;
+
+async function fetchCsrfToken(): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/csrf`, { credentials: "include" });
+    const payload = await res.json().catch(() => null);
+    cachedCsrfToken = payload?.data?.csrfToken ?? null;
+  } catch {
+    cachedCsrfToken = null;
+  }
+  return cachedCsrfToken;
+}
+
+async function ensureCsrfToken(): Promise<string | null> {
+  if (cachedCsrfToken) return cachedCsrfToken;
+  return fetchCsrfToken();
+}
+
+/** Called on logout so the next login fetches a fresh token rather than reusing a stale cached one. */
+export function clearCachedCsrfToken(): void {
+  cachedCsrfToken = null;
 }
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
+  /** Internal: set on the retry attempt to avoid looping forever if the token is somehow still invalid. */
+  _isRetry?: boolean;
 }
 
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -35,11 +66,8 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
 
-  // The backend's CSRF middleware requires this header to match the
-  // (non-httpOnly) csrf cookie on every state-changing request, see
-  // server/src/middleware/csrf.ts for the corresponding check.
   if (method !== "GET") {
-    const csrfToken = readCookie("myright_csrf");
+    const csrfToken = await ensureCsrfToken();
     if (csrfToken) headers["x-csrf-token"] = csrfToken;
   }
 
@@ -56,6 +84,16 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   if (!res.ok) {
     const code = payload?.error?.code ?? "UNKNOWN_ERROR";
     const message = payload?.error?.message ?? "Something went wrong. Please try again.";
+
+    // A cached token can go stale (e.g. the cookie expired or was
+    // cleared server side without the frontend knowing). If the server
+    // specifically rejected it as a CSRF problem, refresh once and retry
+    // before surfacing an error to the caller.
+    if (code === "FORBIDDEN" && message.toLowerCase().includes("csrf") && !options._isRetry) {
+      cachedCsrfToken = null;
+      return apiFetch<T>(path, { ...options, _isRetry: true });
+    }
+
     throw new ApiError(res.status, code, message);
   }
 
@@ -65,7 +103,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 export async function apiUpload<T>(path: string, file: File): Promise<T> {
   const formData = new FormData();
   formData.append("file", file);
-  const csrfToken = readCookie("myright_csrf");
+  const csrfToken = await ensureCsrfToken();
 
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
