@@ -6,20 +6,24 @@ import { env, isProduction } from "@/config/env";
 /**
  * Double-submit cookie CSRF protection.
  *
- * The session cookie is httpOnly and sameSite=strict, which already blocks
- * most cross-site request forgery on its own. This adds a second, readable
- * cookie whose value the frontend must echo back in a custom header on
- * every mutating request. A cross-site attacker can trigger a cookie-bearing
- * request but cannot read the CSRF cookie's value to put it in that header
- * (same-origin policy), so the two layers cover each other's gaps rather
- * than duplicating the same protection.
+ * In development the session cookie is sameSite=lax, which already blocks
+ * most cross-site request forgery on its own, this double-submit check is
+ * a second layer. In production it's sameSite=none (required for a
+ * frontend and backend on different domains, see cookies.ts), which
+ * provides no CSRF protection at all, so this check is the *only* CSRF
+ * defense there, not a backup one. It still holds up on its own: a
+ * cross-site attacker's forged request carries the browser's cookies
+ * automatically, but same-origin policy stops their page's JavaScript
+ * from reading the CSRF cookie's value to put in the required header.
  */
+const sameSitePolicy = isProduction ? "none" : "lax";
+
 export function issueCsrfCookie(res: Response): string {
   const token = randomBytes(24).toString("hex");
   res.cookie(env.CSRF_COOKIE_NAME, token, {
     httpOnly: false,
     secure: isProduction,
-    sameSite: "strict",
+    sameSite: sameSitePolicy,
     path: "/",
   });
   return token;
