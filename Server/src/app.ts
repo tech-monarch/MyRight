@@ -17,6 +17,15 @@ import { apiRateLimiter } from "@/middleware/rateLimit";
 
 const app = express();
 
+// Render (and most PaaS hosts) sit the app behind a reverse proxy, which
+// sets X-Forwarded-For to the real client IP. Without this, req.ip
+// resolves to the proxy's own address for every request, and
+// express-rate-limit refuses to trust the header at all (see the
+// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR warning this fixes). `1` means
+// trust exactly one hop, Render's own edge proxy, not an arbitrary chain
+// an attacker could spoof by adding their own X-Forwarded-For header.
+app.set("trust proxy", 1);
+
 // Request ID + structured logging first, so every later log line (and the
 // error handler) can be tied back to one request.
 app.use(
