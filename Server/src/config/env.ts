@@ -34,7 +34,7 @@ const envSchema = z.object({
   // https://ai.google.dev/gemini-api/docs/models before deploying, the
   // defaults below are current as of this milestone but will go stale.
   GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default("gemini-2.5-flash"),
+  GEMINI_MODEL: z.string().default("gemini-3.5-flash"),
   GEMINI_EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
   GEMINI_EMBEDDING_DIMENSIONS: z.coerce.number().default(768),
   STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
