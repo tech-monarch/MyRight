@@ -18,7 +18,17 @@ const envSchema = z.object({
   SESSION_COOKIE_NAME: z.string().default("myright_session"),
   CSRF_COOKIE_NAME: z.string().default("myright_csrf"),
   SESSION_TTL_DAYS: z.coerce.number().default(14),
-  CLIENT_ORIGIN: z.string().url().default("http://localhost:3000"),
+  // Comma-separated list of origins allowed to call this API with
+  // credentials (cookies), e.g. your local dev frontend and your
+  // deployed frontend both need to be listed:
+  //   CLIENT_ORIGIN=http://localhost:3000,https://your-app.vercel.app
+  CLIENT_ORIGIN: z
+    .string()
+    .default("http://localhost:3000")
+    .transform((value) => value.split(",").map((origin) => origin.trim()).filter(Boolean))
+    .refine((origins) => origins.every((origin) => z.string().url().safeParse(origin).success), {
+      message: "CLIENT_ORIGIN must be a comma-separated list of valid URLs",
+    }),
   // Model names are env-configurable on purpose, Gemini's model lineup
   // changes fairly often. Verify these against
   // https://ai.google.dev/gemini-api/docs/models before deploying, the
