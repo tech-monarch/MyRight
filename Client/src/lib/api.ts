@@ -5,7 +5,14 @@
  * why.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Relative, not the backend's own domain. See next.config.mjs, /api/*
+// is proxied through this same origin to the real backend server-side,
+// specifically so the session cookie is a first-party cookie from the
+// browser's point of view. Safari blocks cross-site cookies outright
+// (Intelligent Tracking Prevention), regardless of SameSite/Secure
+// attributes, calling the backend's domain directly here would silently
+// break login for every Safari and iOS user.
+const API_BASE = "";
 
 export class ApiError extends Error {
   readonly status: number;

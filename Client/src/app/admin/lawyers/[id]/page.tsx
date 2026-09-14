@@ -208,7 +208,7 @@ export default function LawyerDetailPage({ params }: { params: { id: string } })
                 <ul className="space-y-2">
                   {unassignedCases.map((d) => (
                     <li key={d.id} className="flex items-center justify-between rounded-lg border border-dashed border-border px-3.5 py-2.5">
-                      <p className="truncate text-sm text-navy">{d.title}</p>
+                      <p className="min-w-0 flex-1 truncate text-sm text-navy">{d.title}</p>
                       <button
                         onClick={() => handleAssign(d.id)}
                         disabled={busy}

@@ -18,7 +18,10 @@ export function signAsDisputant(disputeId: string): Promise<Resolution> {
 
 // --- Public signing (the other party, no MyRight account) ---
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Relative, see the matching comment in api.ts, proxied through
+// next.config.mjs's rewrite so this stays a first-party request even
+// though the resolution signing page has no session of its own.
+const API_BASE = "";
 
 export interface PublicResolutionView {
   disputeTitle: string;

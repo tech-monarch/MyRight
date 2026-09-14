@@ -111,7 +111,7 @@ export function ResolutionPanel({ dispute }: { dispute: Dispute }) {
             link yourself, here it is:
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <code className="flex-1 truncate rounded bg-white px-2 py-1.5 text-xs text-navy">{signingUrl}</code>
+            <code className="min-w-0 flex-1 truncate rounded bg-white px-2 py-1.5 text-xs text-navy">{signingUrl}</code>
             <button
               onClick={() => {
                 navigator.clipboard?.writeText(signingUrl);

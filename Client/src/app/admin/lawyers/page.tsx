@@ -48,7 +48,8 @@ export default function LawyersListPage() {
 
           {lawyers && (
             <Card className="mt-4 overflow-hidden p-0">
-              <table className="w-full text-left text-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[480px] text-left text-sm">
                 <thead className="border-b border-border bg-surface-off text-xs font-semibold uppercase tracking-wide text-text-muted">
                   <tr>
                     <th className="px-4 py-3">Name</th>
@@ -81,6 +82,7 @@ export default function LawyersListPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </Card>
           )}
         </div>

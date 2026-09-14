@@ -256,9 +256,9 @@ function EvidenceUpload({ files, onChange }: { files: File[]; onChange: (files: 
         <ul className="mt-4 space-y-2">
           {files.map((file, i) => (
             <li key={`${file.name}-${i}`} className="flex items-center justify-between rounded-lg border border-border bg-white px-3.5 py-2.5 text-sm">
-              <span className="flex items-center gap-2 truncate text-navy">
+              <span className="flex min-w-0 flex-1 items-center gap-2 text-navy">
                 <FileText size={16} className="shrink-0 text-blue" />
-                <span className="truncate">{file.name}</span>
+                <span className="min-w-0 truncate">{file.name}</span>
               </span>
               <button
                 onClick={() => onChange(files.filter((_, idx) => idx !== i))}

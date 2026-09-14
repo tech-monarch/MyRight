@@ -2,6 +2,7 @@
 
 import { Bell, Menu } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { useMobileMenu } from "@/lib/MobileMenuContext";
 
 function initials(name: string): string {
   return name
@@ -14,11 +15,13 @@ function initials(name: string): string {
 
 export function DashboardTopbar({ title }: { title?: string }) {
   const { data: user } = useCurrentUser();
+  const { toggle } = useMobileMenu();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-white px-4 md:px-8">
       <div className="flex items-center gap-3">
         <button
+          onClick={toggle}
           className="rounded-lg p-2 text-navy hover:bg-surface-off md:hidden"
           aria-label="Open menu"
         >
