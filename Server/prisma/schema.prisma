@@ -16,10 +16,19 @@ generator client {
 }
 
 datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  directUrl  = env("DIRECT_URL")
-  extensions = [vector]
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  directUrl         = env("DIRECT_URL")
+  // `prisma migrate dev` needs a scratch database to diff against, and
+  // part of that process requires terminating stale connections, which
+  // needs Postgres superuser. Managed hosts like Render don't grant that
+  // to your app's role, so without this, migrate dev tries (and fails)
+  // to manage a shadow database inside your real one. Point this at a
+  // separate, empty database instead, `migrate deploy` (what actually
+  // runs against production) never uses this at all, so it's a dev-only
+  // requirement.
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  extensions        = [vector]
 }
 
 enum UserRole {

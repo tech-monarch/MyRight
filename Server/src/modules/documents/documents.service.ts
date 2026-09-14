@@ -15,7 +15,18 @@ const ALLOWED_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
 
-export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB
+// 4 MB, not the more generous limit you'd pick in isolation. The
+// frontend now proxies every request (including uploads) through
+// Next.js/Vercel to keep the session cookie first-party for Safari (see
+// next.config.mjs), and Vercel enforces a hard, non-configurable 4.5MB
+// cap on any single Function's request body, proxied or not. This
+// leaves headroom for multipart overhead under that ceiling. If the
+// frontend ever moves off Vercel, or evidence uploads need to support
+// larger files, the real fix is a direct-to-storage upload flow
+// (presigned PUT URL, bypassing this server entirely for the file
+// bytes), not raising this number, it will just start failing with a
+// platform-level 413 again.
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 function safeExtension(originalName: string): string {
   const ext = path.extname(originalName).toLowerCase();
@@ -31,7 +42,7 @@ export function validateUpload(file: { mimetype: string; size: number; originaln
     );
   }
   if (file.size > MAX_UPLOAD_BYTES) {
-    throw AppError.badRequest("That file is too large. The maximum size is 15 MB.");
+    throw AppError.badRequest("That file is too large. The maximum size is 4 MB.");
   }
 }
 
