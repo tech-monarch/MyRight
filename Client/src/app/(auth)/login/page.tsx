@@ -79,7 +79,7 @@ export default function LoginPage() {
 
       <p className="mt-6 text-center text-sm text-text-muted">
         New to MyRight?{" "}
-        <ButtonLink href="/register" variant="ghost" size="sm" className="!px-1 !py-0 inline">
+        <ButtonLink href="/register" variant="ghost" size="sm" className="px-1 py-0 inline">
           Create an account
         </ButtonLink>
       </p>

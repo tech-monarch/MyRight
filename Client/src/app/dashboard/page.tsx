@@ -60,20 +60,20 @@ export default function DashboardOverviewPage() {
                       .filter((d) => d.status !== "RESOLVED" && d.status !== "WITHDRAWN")
                       .map((d) => (
                         <Link key={d.id} href={`/dashboard/disputes/${d.id}`}>
-                          <Card className="transition-shadow hover:shadow-raised">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate font-semibold text-navy">{d.title}</p>
-                                <p className="mt-0.5 text-xs text-text-muted">
-                                  {d.type} {"\u00b7"} Updated{" "}
-                                  {new Date(d.updatedAt).toLocaleDateString("en-GB", {
-                                    day: "numeric",
-                                    month: "short",
-                                  })}
-                                </p>
-                              </div>
-                              <Badge tone={statusTone[d.status]}>{statusLabel[d.status]}</Badge>
+                          <Card className="flex flex-col gap-2 transition-shadow hover:shadow-raised sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-navy">{d.title}</p>
+                              <p className="mt-0.5 text-xs text-text-muted">
+                                {d.type} {"\u00b7"} Updated{" "}
+                                {new Date(d.updatedAt).toLocaleDateString("en-GB", {
+                                  day: "numeric",
+                                  month: "short",
+                                })}
+                              </p>
                             </div>
+                            <Badge tone={statusTone[d.status]} className="self-start">
+                              {statusLabel[d.status]}
+                            </Badge>
                           </Card>
                         </Link>
                       ))}
@@ -91,7 +91,7 @@ export default function DashboardOverviewPage() {
                   </p>
                   <ButtonLink
                     href="/dashboard/disputes/new"
-                    className="mt-4 w-full !bg-white !text-navy hover:!bg-blue-light"
+                    className="mt-4 w-full bg-white text-navy hover:bg-blue-light"
                     icon={<Plus size={16} />}
                   >
                     Start a dispute
@@ -120,15 +120,17 @@ function NeedsAttention({ disputes }: { disputes: Dispute[] }) {
       </h3>
       <div className="space-y-3">
         {withHints.map(({ dispute, hint }) => (
-          <Card key={dispute.id} className="flex items-start gap-3">
-            <AlertCircle size={20} className="mt-0.5 shrink-0 text-warning" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-navy">{dispute.title}</p>
-              <p className="mt-0.5 text-sm text-text-muted">{hint}</p>
+          <Card key={dispute.id} className="flex flex-col gap-3 sm:flex-row sm:items-start">
+            <div className="flex items-start gap-3">
+              <AlertCircle size={20} className="mt-0.5 shrink-0 text-warning" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-navy">{dispute.title}</p>
+                <p className="mt-0.5 text-sm text-text-muted">{hint}</p>
+              </div>
             </div>
             <Link
               href={`/dashboard/disputes/${dispute.id}`}
-              className="shrink-0 text-sm font-semibold text-blue hover:underline"
+              className="shrink-0 text-sm font-semibold text-blue hover:underline sm:self-start"
             >
               View
             </Link>

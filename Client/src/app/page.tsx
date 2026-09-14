@@ -279,14 +279,14 @@ function CTASection() {
             describe your situation and see your options.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <ButtonLink href="/register" size="lg" className="bg-white !text-navy hover:bg-blue-light">
+            <ButtonLink href="/register" size="lg" className="bg-white text-navy hover:bg-blue-light">
               Start my dispute
             </ButtonLink>
             <ButtonLink
               href="/login"
               size="lg"
               variant="ghost"
-              className="!text-white hover:bg-white/10"
+              className="text-white hover:bg-white/10"
             >
               Log in
             </ButtonLink>

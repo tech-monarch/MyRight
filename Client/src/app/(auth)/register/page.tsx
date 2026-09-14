@@ -92,7 +92,7 @@ export default function RegisterPage() {
 
       <p className="mt-4 text-center text-sm text-text-muted">
         Already have an account?{" "}
-        <ButtonLink href="/login" variant="ghost" size="sm" className="!px-1 !py-0 inline">
+        <ButtonLink href="/login" variant="ghost" size="sm" className="px-1 py-0 inline">
           Log in
         </ButtonLink>
       </p>
