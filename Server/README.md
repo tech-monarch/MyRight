@@ -1,9 +1,9 @@
-# MyRight: Backend (Milestone 8)
+# MyRight: Backend (Milestone 9)
 
 Node.js + TypeScript + Express API, PostgreSQL via Prisma, Gemini-powered
-RAG, mediation scheduling with Google Meet, WhatsApp notifications, and
-e-signature. This replaces the old Supabase-based server, no Supabase
-dependency anywhere in this codebase.
+RAG, mediation scheduling with embedded Daily.co video, WhatsApp
+notifications, and e-signature. This replaces the old Supabase-based
+server, no Supabase dependency anywhere in this codebase.
 
 ## Verified against a real database
 
@@ -11,24 +11,39 @@ A real `prisma migrate dev` run (by the project owner, not in the sandbox
 this was built in) confirmed the Milestone 6 schema, including the
 pgvector extension and every RAG table, migrates cleanly against actual
 PostgreSQL. That migration is checked in at
-`prisma/migrations/20260911092150_init`. The models added in this
-milestone (mediation, resolution, notifications) are not in it yet,
-running `npx prisma migrate dev` again will generate a second migration
-for just the diff.
+`prisma/migrations/20260911092150_init`, plus a second one for the
+mediation/resolution/notification models added after it. The video model
+changed again in this milestone (Google Meet replaced with Daily.co,
+including dropping the `GoogleAccountConnection` table entirely and
+adding `MediationAttendance`), running `npx prisma migrate dev` once more
+will generate a third migration for that diff.
 
-## What's in this milestone (on top of Milestones 5-7)
+## What's in this milestone (on top of Milestones 5-8)
 
 - **Mediator scheduling** (`modules/mediation/`): a lawyer sets recurring
   weekly availability (`MediatorAvailability`), and a `MediationSession`
   can be scheduled for a case once a mediator is assigned. Scheduling a
   session automatically advances the case to `IN_MEDIATION`.
-- **Google Meet** (`infrastructure/google/`): a lawyer connects their own
-  Google account via OAuth (refresh token encrypted at rest with
-  AES-256-GCM, see `utils/encryption.ts`), then session creation can ask
-  Google Calendar to auto-attach a Meet link (`conferenceData`), there is
-  no separate "create a Meet link" API, it's a side effect of a Calendar
-  event on the mediator's own calendar. Falls back to a manually pasted
-  link if the mediator hasn't connected Google.
+- **Embedded video via Daily.co** (`infrastructure/video/daily.provider.ts`):
+  replaces the earlier Google Meet integration entirely. One
+  platform-level API key, not a per-mediator OAuth connection, session
+  creation just works with no setup step for lawyers. Rooms are created
+  with a real waiting room (`enable_knocking`, the mediator admits each
+  party), breakout room support (for caucusing, meeting privately with
+  one side), live captions, and a join window matched to the session's
+  scheduled start/end (`nbf`/`exp`, plus `eject_at_room_exp` so a room
+  doesn't linger open indefinitely). Falls back to a manually pasted link
+  if a mediator prefers a different tool.
+- **Attendance records** (`MediationAttendance`): pulled from Daily's
+  presence API after a session's scheduled end time passes (see
+  `syncAttendance` in `sessions.service.ts`, called on-demand when the
+  session list is viewed, not via webhook, see the code comment on that
+  tradeoff). A record of who actually joined and for how long, useful for
+  a dispute process specifically, not just a video nicety.
+- **Outcome notes**: a mediator can record a short free-text summary of
+  what happened in a session (`MediationSession.outcomeNotes`), separate
+  from a `Resolution`'s binding terms, useful even when a session doesn't
+  end in an agreement.
 - **E-signature** (`modules/resolution/`): a `Resolution`'s terms get
   signed by the disputant (authenticated) and the other party (via a
   single-use, hashed, expiring token link, they have no MyRight account).
@@ -60,14 +75,27 @@ for just the diff.
   once your npm config allows git dependencies:
   `npm install @whiskeysockets/baileys`.
 
+### Not in this milestone, deliberately deferred
+
+- **Pre-session reminders** (a WhatsApp message N minutes before a
+  session starts). This needs real delayed/scheduled job infrastructure,
+  the existing patterns in this codebase (the ingestion queue) are
+  immediate, fire-on-event, not time-delayed, bolting a reminder onto
+  that shape would mean a fragile polling loop. Worth doing once a real
+  job scheduler (pg-boss, reusing the Postgres already required here, is
+  the natural choice) is justified by more than just this one feature.
+- **Session recording.** Daily supports it as a room flag, but a
+  recording of a legal mediation session needs an explicit, informed
+  two-party consent flow before it's ethical or likely legal to turn on,
+  not just a checkbox in a scheduling form. Needs a product decision
+  first.
+
 ### New environment variables
 
 See `.env.example` for the full list. At minimum for these features:
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` (Google
-Meet), `ENCRYPTION_KEY` (required before any Google account can be
-connected), `WHATSAPP_ENABLED` + `WHATSAPP_AUTH_DIR` (WhatsApp), `APP_URL`
-(used to build the resolution signing link and the Google OAuth redirect
-back to the frontend).
+`DAILY_API_KEY` (get one at https://dashboard.daily.co/developers),
+`WHATSAPP_ENABLED` + `WHATSAPP_AUTH_DIR` (WhatsApp), `APP_URL` (used to
+build the resolution signing link).
 
 ### New endpoints
 
@@ -75,14 +103,11 @@ back to the frontend).
 GET    /api/mediation/availability/me           (lawyer's own availability)
 PUT    /api/mediation/availability/me            (replace it)
 GET    /api/mediation/availability/:lawyerId
-GET    /api/mediation/google/status              (lawyer)
-POST   /api/mediation/google/connect             (lawyer, returns a Google OAuth URL)
-GET    /api/mediation/google/callback            (not authenticated, see the comment in google-oauth.ts on why)
-POST   /api/mediation/google/disconnect
 
-GET    /api/disputes/:disputeId/sessions
-POST   /api/disputes/:disputeId/sessions         (mediator/SuperAdmin only)
+GET    /api/disputes/:disputeId/sessions          (also syncs attendance for any past-due session)
+POST   /api/disputes/:disputeId/sessions          (mediator/SuperAdmin only, creates a Daily room by default)
 POST   /api/disputes/:disputeId/sessions/:id/cancel
+POST   /api/disputes/:disputeId/sessions/:id/outcome  (mediator only, records notes and marks the session COMPLETED)
 
 GET    /api/disputes/:disputeId/resolution
 POST   /api/disputes/:disputeId/resolution       (owner or mediator, returns a one-time signingUrl)

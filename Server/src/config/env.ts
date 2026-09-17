@@ -44,17 +44,17 @@ const envSchema = z.object({
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_ENDPOINT: z.string().optional(),
 
-  // Google OAuth, used only for a mediator to connect their calendar for
-  // Meet link creation. Leave unset to develop without this feature,
-  // routes that need it fail with a clear error rather than crashing at
-  // startup.
-  GOOGLE_CLIENT_ID: z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional(),
-  GOOGLE_REDIRECT_URI: z.string().optional(),
-
-  // 32-byte key (as 64 hex chars) used to encrypt Google refresh tokens
-  // at rest. Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-  ENCRYPTION_KEY: z.string().optional(),
+  // Daily.co, used for embedded mediation video (see
+  // infrastructure/video/daily.provider.ts). A single platform-level API
+  // key, unlike the old Google Meet integration this replaces, no
+  // per-mediator OAuth connection needed. Leave unset to develop without
+  // video scheduling, session creation fails with a clear error rather
+  // than crashing at startup.
+  DAILY_API_KEY: z.string().optional(),
+  // Your Daily subdomain, e.g. "myright" for rooms at myright.daily.co.
+  // Only used to validate/construct URLs, not required for API calls
+  // themselves (the API key alone identifies the account).
+  DAILY_DOMAIN: z.string().optional(),
 
   // WhatsApp via Baileys (see infrastructure/notifications/whatsapp.provider.ts).
   // Off by default, since it requires scanning a QR code to link a real

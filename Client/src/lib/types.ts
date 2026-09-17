@@ -102,6 +102,14 @@ export interface AvailabilitySlot {
 
 export type MediationSessionStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
+export interface MediationAttendance {
+  id: string;
+  participantName: string;
+  joinedAt: string | null;
+  leftAt: string | null;
+  durationSec: number | null;
+}
+
 export interface MediationSession {
   id: string;
   disputeId: string;
@@ -110,12 +118,9 @@ export interface MediationSession {
   scheduledEnd: string;
   meetingUrl: string | null;
   status: MediationSessionStatus;
+  outcomeNotes: string | null;
+  attendance: MediationAttendance[];
   createdAt: string;
-}
-
-export interface GoogleConnectionStatus {
-  connected: boolean;
-  email: string | null;
 }
 
 export type ResolutionStatus = "AWAITING_SIGNATURES" | "FULLY_SIGNED" | "VOID";

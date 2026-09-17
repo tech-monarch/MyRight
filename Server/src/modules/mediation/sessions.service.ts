@@ -1,5 +1,5 @@
 import { prisma } from "@/infrastructure/database/prisma";
-import { createMeetSession, cancelMeetSession } from "@/infrastructure/google/google-calendar";
+import { createSessionRoom, deleteRoom, getRoomPresence } from "@/infrastructure/video/daily.provider";
 import { notifySessionScheduled } from "@/infrastructure/notifications/notification.service";
 import { transitionStatus } from "@/modules/disputes/disputes.service";
 import { AppError } from "@/utils/AppError";
@@ -8,6 +8,7 @@ export function listSessions(disputeId: string) {
   return prisma.mediationSession.findMany({
     where: { disputeId },
     orderBy: { scheduledStart: "asc" },
+    include: { attendance: true },
   });
 }
 
@@ -17,34 +18,22 @@ export async function createSession(input: {
   createdById: string;
   scheduledStart: Date;
   scheduledEnd: Date;
-  useGoogleMeet: boolean;
+  useDailyVideo: boolean;
   manualMeetingUrl?: string;
 }) {
-  const dispute = await prisma.dispute.findUniqueOrThrow({
-    where: { id: input.disputeId },
-    include: { owner: { select: { email: true } } },
-  });
+  const dispute = await prisma.dispute.findUniqueOrThrow({ where: { id: input.disputeId } });
 
   let meetingUrl = input.manualMeetingUrl ?? null;
-  let googleEventId: string | null = null;
+  let dailyRoomName: string | null = null;
 
-  if (input.useGoogleMeet) {
-    const attendeeEmails = dispute.owner.email ? [dispute.owner.email] : [];
-    const event = await createMeetSession({
-      lawyerId: input.lawyerId,
-      summary: `MyRight mediation: ${dispute.title}`,
-      description: "Mediation session scheduled via MyRight.",
-      startTime: input.scheduledStart,
-      endTime: input.scheduledEnd,
-      attendeeEmails,
+  if (input.useDailyVideo) {
+    const room = await createSessionRoom({
+      disputeId: input.disputeId,
+      scheduledStart: input.scheduledStart,
+      scheduledEnd: input.scheduledEnd,
     });
-    if (!event) {
-      throw AppError.badRequest(
-        "Google Meet isn't connected for your account yet. Connect it in Settings, or paste in a meeting link instead."
-      );
-    }
-    meetingUrl = event.meetingUrl;
-    googleEventId = event.eventId;
+    meetingUrl = room.url;
+    dailyRoomName = room.name;
   }
 
   const session = await prisma.mediationSession.create({
@@ -55,7 +44,7 @@ export async function createSession(input: {
       scheduledStart: input.scheduledStart,
       scheduledEnd: input.scheduledEnd,
       meetingUrl,
-      googleEventId,
+      dailyRoomName,
     },
   });
 
@@ -96,9 +85,47 @@ export async function cancelSession(sessionId: string, disputeId: string) {
   const session = await prisma.mediationSession.findFirst({ where: { id: sessionId, disputeId } });
   if (!session) throw AppError.notFound("Session not found");
 
-  if (session.googleEventId) {
-    await cancelMeetSession(session.lawyerId, session.googleEventId);
+  if (session.dailyRoomName) {
+    await deleteRoom(session.dailyRoomName);
   }
 
   return prisma.mediationSession.update({ where: { id: sessionId }, data: { status: "CANCELLED" } });
+}
+
+/**
+ * Pulls attendance from Daily's presence API and stores it, meant to be
+ * called once a session is over (the case detail page calls this the
+ * first time someone views a past-scheduled-end session, see
+ * mediation.controller.ts). Idempotent-ish: re-fetching just replaces the
+ * prior snapshot rather than duplicating rows, since Daily's presence
+ * data for a finished room is stable once the room has emptied out.
+ */
+export async function syncAttendance(sessionId: string): Promise<void> {
+  const session = await prisma.mediationSession.findUniqueOrThrow({ where: { id: sessionId } });
+  if (!session.dailyRoomName) return; // Manual link sessions have no attendance data to pull.
+
+  const participants = await getRoomPresence(session.dailyRoomName);
+
+  await prisma.$transaction([
+    prisma.mediationAttendance.deleteMany({ where: { sessionId } }),
+    prisma.mediationAttendance.createMany({
+      data: participants.map((p) => ({
+        sessionId,
+        participantName: p.participantName,
+        joinedAt: p.joinedAt,
+        leftAt: p.leftAt,
+        durationSec: p.durationSec,
+      })),
+    }),
+  ]);
+}
+
+export async function submitOutcomeNotes(sessionId: string, disputeId: string, outcomeNotes: string) {
+  const session = await prisma.mediationSession.findFirst({ where: { id: sessionId, disputeId } });
+  if (!session) throw AppError.notFound("Session not found");
+
+  return prisma.mediationSession.update({
+    where: { id: sessionId },
+    data: { outcomeNotes, status: "COMPLETED" },
+  });
 }

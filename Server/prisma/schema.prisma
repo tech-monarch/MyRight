@@ -107,7 +107,6 @@ model User {
   statusChanges     DisputeStatusHistory[]
   availability      MediatorAvailability[] @relation("LawyerAvailability")
   mediationSessions MediationSession[]     @relation("MediatorSessions")
-  googleAccount     GoogleAccountConnection?
   resolutionsCreated Resolution[]
 
   @@index([courthouseId])
@@ -326,7 +325,7 @@ model AIAnalysis {
 }
 
 // ---------------------------------------------------------------------
-// Mediation scheduling, Google Meet, e-signature, notifications
+// Mediation scheduling, embedded video (Daily.co), e-signature, notifications
 // ---------------------------------------------------------------------
 
 // A lawyer's recurring weekly availability, expressed as minutes from
@@ -354,47 +353,56 @@ enum MediationSessionStatus {
 }
 
 model MediationSession {
-  id             String                  @id @default(cuid())
+  id             String                 @id @default(cuid())
   disputeId      String
-  dispute        Dispute                 @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  dispute        Dispute                @relation(fields: [disputeId], references: [id], onDelete: Cascade)
   lawyerId       String
-  lawyer         User                    @relation("MediatorSessions", fields: [lawyerId], references: [id])
+  lawyer         User                   @relation("MediatorSessions", fields: [lawyerId], references: [id])
   scheduledStart DateTime
   scheduledEnd   DateTime
-  // Either a Google Meet link (see GoogleAccountConnection) or a link the
-  // mediator pasted in manually, the schema doesn't distinguish, the UI
-  // just shows whichever is present.
+  // The Daily.co room URL, participants join by opening this directly or
+  // (normally) through the embedded prebuilt UI on the case detail page.
+  // Nullable to accommodate a manually pasted link (Zoom, etc.) for a
+  // mediator who prefers a different tool, the UI doesn't distinguish
+  // the two, it just shows whichever is present.
   meetingUrl     String?
-  googleEventId  String?
-  status         MediationSessionStatus  @default(SCHEDULED)
+  // Daily's room `name`, needed to delete the room on cancellation and to
+  // query attendance afterward. Null when meetingUrl is a manually
+  // pasted link rather than a Daily-created room.
+  dailyRoomName  String?
+  status         MediationSessionStatus @default(SCHEDULED)
+  // A free-text summary the mediator fills in after the session, not a
+  // resolution's binding terms (see the Resolution model for that), just
+  // "what happened in this session", useful even when no agreement was
+  // reached yet and another session gets scheduled later.
+  outcomeNotes   String?
   createdById    String
-  createdAt      DateTime                @default(now())
+  createdAt      DateTime               @default(now())
+
+  attendance MediationAttendance[]
 
   @@index([disputeId])
   @@index([lawyerId])
   @@map("mediation_sessions")
 }
 
-// One row per lawyer who has connected their Google account for Meet
-// link creation. Deliberately per-lawyer, not per-courthouse: the Meet
-// link is created on whichever mediator's calendar runs the session, a
-// courthouse-wide service account would need Google Workspace domain-wide
-// delegation, real infrastructure a small ADR courthouse is unlikely to
-// have, this works with any ordinary Google account.
-model GoogleAccountConnection {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  googleEmail          String
-  // AES-256-GCM ciphertext (see utils/encryption.ts), never the raw
-  // refresh token. A leaked database still does not hand over working
-  // Google credentials without the separate ENCRYPTION_KEY.
-  encryptedRefreshToken String
-  scope                String
-  connectedAt          DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+// One row per person who actually joined a session, pulled from Daily's
+// presence data after the call. This is an attendance record for the
+// dispute process ("did both sides actually show up"), not a live
+// presence feed, MyRight doesn't need real-time tracking, just a
+// dependable record afterward.
+model MediationAttendance {
+  id          String           @id @default(cuid())
+  sessionId   String
+  session     MediationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participantName String
+  joinedAt    DateTime?
+  leftAt      DateTime?
+  durationSec Int?
+  recordedAt  DateTime         @default(now())
 
-  @@map("google_account_connections")
+  @@index([sessionId])
+  @@map("mediation_attendance")
 }
 
 enum ResolutionStatus {

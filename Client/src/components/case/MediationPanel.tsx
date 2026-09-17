@@ -1,21 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarPlus, Loader2, Video, X } from "lucide-react";
+import { CalendarPlus, Check, ChevronDown, Loader2, Users, Video, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Label, Input } from "@/components/ui/Field";
+import { Label, Input, Textarea } from "@/components/ui/Field";
 import { useApi } from "@/lib/useApi";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { listSessions, createSession, cancelSession } from "@/lib/mediation-client";
+import { listSessions, createSession, cancelSession, submitOutcomeNotes } from "@/lib/mediation-client";
 import { ApiError } from "@/lib/api";
-import type { Dispute } from "@/lib/types";
+import type { Dispute, MediationSession } from "@/lib/types";
 
 export function MediationPanel({ dispute }: { dispute: Dispute }) {
   const { data: user } = useCurrentUser();
   const { data: sessions, loading, refetch } = useApi(() => listSessions(dispute.id), [dispute.id]);
   const [showForm, setShowForm] = useState(false);
+  const [activeCallId, setActiveCallId] = useState<string | null>(null);
 
   const isMediator = user?.role === "LAWYER" || user?.role === "SUPERADMIN";
 
@@ -53,49 +54,196 @@ export function MediationPanel({ dispute }: { dispute: Dispute }) {
         )}
 
         {sessions && sessions.length > 0 && (
-          <ul className="mt-4 space-y-2">
+          <ul className="mt-4 space-y-3">
             {sessions.map((s) => (
-              <li key={s.id} className="flex items-center justify-between rounded-lg border border-border px-3.5 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-navy">
-                    {new Date(s.scheduledStart).toLocaleString("en-GB", {
-                      weekday: "short",
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Badge tone={s.status === "SCHEDULED" ? "blue" : s.status === "COMPLETED" ? "success" : "neutral"}>
-                      {s.status.toLowerCase()}
-                    </Badge>
-                    {s.meetingUrl && (
-                      <a
-                        href={s.meetingUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue hover:underline"
-                      >
-                        <Video size={12} /> Join
-                      </a>
-                    )}
-                  </div>
-                </div>
-                {isMediator && s.status === "SCHEDULED" && (
-                  <button
-                    onClick={() => cancelSession(dispute.id, s.id).then(refetch)}
-                    className="shrink-0 text-text-muted hover:text-danger"
-                    aria-label="Cancel session"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </li>
+              <SessionRow
+                key={s.id}
+                session={s}
+                disputeId={dispute.id}
+                isMediator={isMediator}
+                isActiveCall={activeCallId === s.id}
+                onToggleCall={() => setActiveCallId((id) => (id === s.id ? null : s.id))}
+                onChanged={refetch}
+              />
             ))}
           </ul>
         )}
       </Card>
+    </div>
+  );
+}
+
+function SessionRow({
+  session,
+  disputeId,
+  isMediator,
+  isActiveCall,
+  onToggleCall,
+  onChanged,
+}: {
+  session: MediationSession;
+  disputeId: string;
+  isMediator: boolean;
+  isActiveCall: boolean;
+  onToggleCall: () => void;
+  onChanged: () => void;
+}) {
+  const isPast = new Date(session.scheduledEnd) < new Date();
+  const canJoin = session.status === "SCHEDULED" && !!session.meetingUrl;
+
+  return (
+    <li className="rounded-lg border border-border">
+      <div className="flex items-center justify-between px-3.5 py-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-navy">
+            {new Date(session.scheduledStart).toLocaleString("en-GB", {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+          <div className="mt-1 flex items-center gap-2">
+            <Badge tone={session.status === "SCHEDULED" ? "blue" : session.status === "COMPLETED" ? "success" : "neutral"}>
+              {session.status.toLowerCase()}
+            </Badge>
+            {session.attendance.length > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs text-text-muted">
+                <Users size={12} /> {session.attendance.length} joined
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-3">
+          {canJoin && (
+            <button
+              onClick={onToggleCall}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-blue hover:underline"
+            >
+              <Video size={12} /> {isActiveCall ? "Hide call" : "Join call"}
+              <ChevronDown size={12} className={isActiveCall ? "rotate-180 transition-transform" : "transition-transform"} />
+            </button>
+          )}
+          {isMediator && session.status === "SCHEDULED" && (
+            <button
+              onClick={() => cancelSession(disputeId, session.id).then(onChanged)}
+              className="text-text-muted hover:text-danger"
+              aria-label="Cancel session"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {isActiveCall && session.meetingUrl && (
+        <div className="border-t border-border bg-navy">
+          <iframe
+            src={session.meetingUrl}
+            allow="camera; microphone; fullscreen; display-capture; autoplay"
+            className="aspect-video w-full"
+            style={{ border: 0 }}
+          />
+        </div>
+      )}
+
+      {session.attendance.length > 0 && (
+        <div className="border-t border-border px-3.5 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Attendance</p>
+          <ul className="mt-1.5 space-y-1">
+            {session.attendance.map((a) => (
+              <li key={a.id} className="text-xs text-text-muted">
+                {a.participantName}
+                {a.durationSec ? ` \u00b7 ${Math.round(a.durationSec / 60)} min` : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {isPast && (isMediator || session.outcomeNotes) && (
+        <div className="border-t border-border px-3.5 py-3">
+          <OutcomeNotes
+            disputeId={disputeId}
+            session={session}
+            isMediator={isMediator}
+            onSaved={onChanged}
+          />
+        </div>
+      )}
+    </li>
+  );
+}
+
+function OutcomeNotes({
+  disputeId,
+  session,
+  isMediator,
+  onSaved,
+}: {
+  disputeId: string;
+  session: MediationSession;
+  isMediator: boolean;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [notes, setNotes] = useState(session.outcomeNotes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!editing) {
+    return (
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Session notes</p>
+        {session.outcomeNotes ? (
+          <p className="mt-1.5 whitespace-pre-line text-sm text-navy">{session.outcomeNotes}</p>
+        ) : (
+          <p className="mt-1.5 text-sm text-text-muted">No notes recorded yet.</p>
+        )}
+        {isMediator && (
+          <button onClick={() => setEditing(true)} className="mt-2 text-xs font-semibold text-blue hover:underline">
+            {session.outcomeNotes ? "Edit notes" : "Add notes"}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    try {
+      await submitOutcomeNotes(disputeId, session.id, notes);
+      setEditing(false);
+      onSaved();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't save notes. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Session notes</p>
+      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+      <Textarea
+        rows={3}
+        className="mt-1.5"
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="What happened in this session? Any agreements reached, or what's needed next..."
+      />
+      <div className="mt-2 flex gap-2">
+        <Button size="sm" onClick={handleSave} disabled={saving} icon={saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}>
+          Save
+        </Button>
+        <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+          Cancel
+        </Button>
+      </div>
     </div>
   );
 }
@@ -112,7 +260,7 @@ function ScheduleForm({
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("10:00");
   const [endTime, setEndTime] = useState("11:00");
-  const [useGoogleMeet, setUseGoogleMeet] = useState(true);
+  const [useDailyVideo, setUseDailyVideo] = useState(true);
   const [manualUrl, setManualUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -129,8 +277,8 @@ function ScheduleForm({
       await createSession(disputeId, {
         scheduledStart: new Date(`${date}T${startTime}:00`).toISOString(),
         scheduledEnd: new Date(`${date}T${endTime}:00`).toISOString(),
-        useGoogleMeet,
-        manualMeetingUrl: !useGoogleMeet && manualUrl ? manualUrl : undefined,
+        useDailyVideo,
+        manualMeetingUrl: !useDailyVideo && manualUrl ? manualUrl : undefined,
       });
       onDone();
     } catch (err) {
@@ -157,27 +305,30 @@ function ScheduleForm({
           <Input id="end" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
         </div>
       </div>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setUseGoogleMeet(true)}
-          className={`rounded-lg border px-3.5 py-2 text-sm font-medium ${
-            useGoogleMeet ? "border-blue bg-blue-light text-blue" : "border-border text-text-muted"
-          }`}
-        >
-          Google Meet
-        </button>
-        <button
-          type="button"
-          onClick={() => setUseGoogleMeet(false)}
-          className={`rounded-lg border px-3.5 py-2 text-sm font-medium ${
-            !useGoogleMeet ? "border-blue bg-blue-light text-blue" : "border-border text-text-muted"
-          }`}
-        >
-          Paste a link
-        </button>
+      <div>
+        <Label>How will this session happen?</Label>
+        <div className="mt-1 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setUseDailyVideo(true)}
+            className={`rounded-lg border px-3.5 py-2 text-sm font-medium ${
+              useDailyVideo ? "border-blue bg-blue-light text-blue" : "border-border text-text-muted"
+            }`}
+          >
+            Video call in MyRight
+          </button>
+          <button
+            type="button"
+            onClick={() => setUseDailyVideo(false)}
+            className={`rounded-lg border px-3.5 py-2 text-sm font-medium ${
+              !useDailyVideo ? "border-blue bg-blue-light text-blue" : "border-border text-text-muted"
+            }`}
+          >
+            Paste a link
+          </button>
+        </div>
       </div>
-      {!useGoogleMeet && (
+      {!useDailyVideo && (
         <div>
           <Label htmlFor="manualUrl">Meeting link</Label>
           <Input

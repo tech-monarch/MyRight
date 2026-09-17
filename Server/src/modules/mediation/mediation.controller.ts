@@ -7,8 +7,6 @@ import * as availabilityService from "@/modules/mediation/availability.service";
 import * as sessionsService from "@/modules/mediation/sessions.service";
 import * as disputesService from "@/modules/disputes/disputes.service";
 import { canAccessDispute } from "@/modules/disputes/disputes.policy";
-import { getGoogleAuthUrl, connectGoogleAccount, disconnectGoogleAccount, getGoogleConnectionStatus, signState, verifyState } from "@/infrastructure/google/google-oauth";
-import { env } from "@/config/env";
 
 // --- Availability ---
 
@@ -44,8 +42,23 @@ export const listSessions = asyncHandler(async (req: Request, res: Response) => 
   const disputeId = requireParam(req, "disputeId");
   const dispute = await disputesService.getDisputeOr404(disputeId);
   if (!canAccessDispute(req.user!, dispute, dispute.assignment)) throw AppError.notFound("Dispute not found");
+
   const sessions = await sessionsService.listSessions(disputeId);
-  res.json({ success: true, data: sessions });
+
+  // Best-effort: pull attendance for any session whose scheduled end has
+  // passed but which has never been synced, so viewing the case picks up
+  // a fresh attendance record without needing a separate manual action
+  // or a background job. Failures here (Daily unreachable, etc.) should
+  // never break loading the session list itself.
+  const now = new Date();
+  await Promise.all(
+    sessions
+      .filter((s) => s.dailyRoomName && s.scheduledEnd < now && s.attendance.length === 0)
+      .map((s) => sessionsService.syncAttendance(s.id).catch(() => undefined))
+  );
+
+  const refreshed = await sessionsService.listSessions(disputeId);
+  res.json({ success: true, data: refreshed });
 });
 
 export const createSession = asyncHandler(async (req: Request, res: Response) => {
@@ -66,7 +79,7 @@ export const createSession = asyncHandler(async (req: Request, res: Response) =>
     createdById: req.user!.id,
     scheduledStart: new Date(req.body.scheduledStart),
     scheduledEnd: new Date(req.body.scheduledEnd),
-    useGoogleMeet: req.body.useGoogleMeet,
+    useDailyVideo: req.body.useDailyVideo,
     manualMeetingUrl: req.body.manualMeetingUrl,
   });
 
@@ -89,48 +102,23 @@ export const cancelSession = asyncHandler(async (req: Request, res: Response) =>
   res.json({ success: true, data: session });
 });
 
-// --- Google connect ---
+export const submitOutcomeNotes = asyncHandler(async (req: Request, res: Response) => {
+  const disputeId = requireParam(req, "disputeId");
+  await assertCanManageMediation(req, disputeId);
+  const session = await sessionsService.submitOutcomeNotes(
+    requireParam(req, "sessionId"),
+    disputeId,
+    req.body.outcomeNotes
+  );
 
-export const getGoogleStatus = asyncHandler(async (req: Request, res: Response) => {
-  const status = await getGoogleConnectionStatus(req.user!.id);
-  res.json({ success: true, data: status });
-});
+  await writeAuditLog({
+    actorId: req.user!.id,
+    actorLabel: req.user!.name,
+    action: "MEDIATION_SESSION_OUTCOME_RECORDED",
+    targetType: "Dispute",
+    targetId: disputeId,
+    result: "SUCCESS",
+  });
 
-export const startGoogleConnect = asyncHandler(async (req: Request, res: Response) => {
-  const url = getGoogleAuthUrl(signState(req.user!.id));
-  res.json({ success: true, data: { url } });
-});
-
-// Not behind requireAuth, see the comment in google-oauth.ts on why the
-// session cookie doesn't survive this redirect. Trust comes entirely
-// from the signed state, not from req.user.
-export const googleCallback = asyncHandler(async (req: Request, res: Response) => {
-  const state = req.query.state as string | undefined;
-  const code = req.query.code as string | undefined;
-  const userId = state ? verifyState(state) : null;
-
-  if (!userId || !code) {
-    return res.redirect(`${env.APP_URL}/lawyer/settings?google=error`);
-  }
-
-  try {
-    await connectGoogleAccount(userId, code);
-    await writeAuditLog({
-      actorId: userId,
-      actorLabel: userId,
-      action: "GOOGLE_ACCOUNT_CONNECTED",
-      targetType: "User",
-      targetId: userId,
-      result: "SUCCESS",
-    });
-    res.redirect(`${env.APP_URL}/lawyer/settings?google=connected`);
-  } catch (err) {
-    console.error("Google OAuth callback failed", err);
-    res.redirect(`${env.APP_URL}/lawyer/settings?google=error`);
-  }
-});
-
-export const disconnectGoogle = asyncHandler(async (req: Request, res: Response) => {
-  await disconnectGoogleAccount(req.user!.id);
-  res.json({ success: true, data: null });
+  res.json({ success: true, data: session });
 });
