@@ -1,7 +1,23 @@
 import { env } from "@/config/env";
 import { AppError } from "@/utils/AppError";
+import { z } from "zod";
 
 const BASE_URL = "https://api.daily.co/v1";
+
+const createdRoomSchema = z.object({
+  name: z.string().min(1),
+  url: z.string().url(),
+});
+
+const roomPresenceSchema = z.object({
+  data: z.array(
+    z.object({
+      userName: z.string().nullish(),
+      joinTime: z.string().datetime({ offset: true }),
+      duration: z.number().int().nonnegative().nullish(),
+    })
+  ),
+});
 
 /**
  * Daily.co replaces the earlier Google Meet integration. The important
@@ -17,7 +33,7 @@ function assertConfigured() {
   }
 }
 
-async function dailyFetch(path: string, options: { method?: string; body?: unknown } = {}) {
+async function dailyFetch(path: string, options: { method?: string; body?: unknown } = {}): Promise<unknown> {
   assertConfigured();
   const res = await fetch(`${BASE_URL}${path}`, {
     method: options.method ?? "GET",
@@ -29,12 +45,28 @@ async function dailyFetch(path: string, options: { method?: string; body?: unkno
   });
 
   if (!res.ok) {
-    const errorBody = await res.text().catch(() => "");
+    const errorBody = await res.text();
     console.error("Daily.co API error", res.status, errorBody);
     throw new AppError(502, "VIDEO_PROVIDER_ERROR", "The video service is temporarily unavailable. Please try again.");
   }
 
-  return res.json();
+  if (res.status === 204) return undefined;
+
+  try {
+    return await res.json();
+  } catch (error) {
+    console.error("Daily.co returned invalid JSON", error);
+    throw new AppError(502, "VIDEO_PROVIDER_ERROR", "The video service returned an invalid response. Please try again.");
+  }
+}
+
+function parseDailyResponse<T extends z.ZodTypeAny>(schema: T, response: unknown, operation: string): z.infer<T> {
+  const result = schema.safeParse(response);
+  if (!result.success) {
+    console.error(`Daily.co returned an invalid ${operation} response`, result.error.issues);
+    throw new AppError(502, "VIDEO_PROVIDER_ERROR", "The video service returned an invalid response. Please try again.");
+  }
+  return result.data;
 }
 
 export interface CreatedRoom {
@@ -82,7 +114,7 @@ export async function createSessionRoom(input: {
     },
   });
 
-  return { name: data.name, url: data.url };
+  return parseDailyResponse(createdRoomSchema, data, "room creation");
 }
 
 export async function deleteRoom(roomName: string): Promise<void> {
@@ -108,12 +140,16 @@ export interface RoomParticipant {
  * record after the fact, not who's in the call right now.
  */
 export async function getRoomPresence(roomName: string): Promise<RoomParticipant[]> {
-  const data = await dailyFetch(`/rooms/${encodeURIComponent(roomName)}/presence`);
-  const participants = data?.data ?? [];
-  return participants.map((p: any) => ({
-    participantName: p.userName || p.user_name || "Unknown participant",
-    joinedAt: p.joinTime ? new Date(p.joinTime * 1000) : null,
-    leftAt: p.leaveTime ? new Date(p.leaveTime * 1000) : null,
-    durationSec: p.duration ?? null,
-  }));
+  const response = await dailyFetch(`/rooms/${encodeURIComponent(roomName)}/presence`);
+  const { data } = parseDailyResponse(roomPresenceSchema, response, "room presence");
+  return data.map((participant) => {
+    const joinedAt = new Date(participant.joinTime);
+    const durationSec = participant.duration ?? null;
+    return {
+      participantName: participant.userName?.trim() || "Unknown participant",
+      joinedAt,
+      leftAt: durationSec === null ? null : new Date(joinedAt.getTime() + durationSec * 1000),
+      durationSec,
+    };
+  });
 }

@@ -5,18 +5,21 @@ RAG, mediation scheduling with embedded Daily.co video, WhatsApp
 notifications, and e-signature. This replaces the old Supabase-based
 server, no Supabase dependency anywhere in this codebase.
 
-## Verified against a real database
+## Database migrations and deployment
 
-A real `prisma migrate dev` run (by the project owner, not in the sandbox
-this was built in) confirmed the Milestone 6 schema, including the
-pgvector extension and every RAG table, migrates cleanly against actual
-PostgreSQL. That migration is checked in at
-`prisma/migrations/20260911092150_init`, plus a second one for the
-mediation/resolution/notification models added after it. The video model
-changed again in this milestone (Google Meet replaced with Daily.co,
-including dropping the `GoogleAccountConnection` table entirely and
-adding `MediationAttendance`), running `npx prisma migrate dev` once more
-will generate a third migration for that diff.
+The initial PostgreSQL migration was verified against a real database.
+This checkout currently tracks only that initial migration, while the
+current Prisma schema also includes later mediation, resolution, and
+notification models. Before deploying schema-dependent features, compare
+the target database's `_prisma_migrations` history and tables with
+`prisma/schema.prisma`. If those later schema changes have not already
+been applied, create and review a forward-only migration in development,
+then apply it in Render with `prisma migrate deploy`. Do not run
+`prisma migrate dev` or reset a production database.
+
+The build command is `npm run build`, which runs `prisma generate` before
+TypeScript compilation. Configure Render to run `npm run build` rather
+than `tsc && tsc-alias` directly, and use `npm start` as the start command.
 
 ## What's in this milestone (on top of Milestones 5-8)
 
@@ -214,20 +217,10 @@ a genuine Retrieval-Augmented Generation pipeline:
   and treat its output as something a person needs to actually read, not
   a pass/fail gate.
 
-## Important limitations carried over from Milestone 5
-- **`prisma generate` could not be run or verified in the environment this
-  was built in** (the sandbox's network allowlist does not include
-  `binaries.prisma.sh`). Every file was still typechecked with
-  `tsc --noEmit`, and the only remaining errors are "has no exported
-  member" on `@prisma/client` types that only exist after `prisma
-  generate` runs, or implicit-`any` errors that are a direct consequence
-  of that (see the `$queryRaw`/`findMany` calls in `rag/retrieval.service.ts`
-  and `rag/rag.service.ts`, both should resolve to real types once the
-  client is generated). Run `npm install && npx prisma generate` in an
-  environment with normal internet access before trusting this compiles
-  end to end, **this has still not been verified against a real
-  Postgres+pgvector database**, that verification matters more for this
-  milestone than the last one given how much of it is raw SQL.
+## Important limitations
+- The current schema and database have not been verified together against
+  a live Postgres+pgvector database in this checkout. See the migration
+  warning above before deploying schema changes.
 - `AuditLog` rows are not tagged with a courthouse (fine for one
   courthouse, needs a column added before a second one is onboarded).
 - Unassigned disputes are visible to every courthouse's SuperAdmin.
@@ -318,11 +311,8 @@ GET    /api/admin/audit-log
 
 ## Testing
 
-Not yet implemented (see "Not yet built" above). The module boundaries
-(`*.service.ts` for business logic, `*.controller.ts` for HTTP glue,
-`*.policy.ts` for authorization) are structured so each can be unit tested
-independently once tests are written, and `vitest` is already a
-dependency for that.
+Run `npm test` for the Daily.co response validation tests. Most service,
+controller, and authorization modules do not yet have automated tests.
 
 ## Style note
 

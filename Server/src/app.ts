@@ -48,7 +48,7 @@ app.use(apiRateLimiter);
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.get("/health/db", async (_req, res) => {
-  const { prisma } = await import("@/infrastructure/database/prisma");
+  const { prisma } = await import("@/infrastructure/database/prisma.js");
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.json({ status: "ok" });
