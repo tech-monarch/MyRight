@@ -7,14 +7,18 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(4000),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-  // Only needed if your Postgres provider offers a separate pooled
-  // connection string (e.g. Layerbase, Neon, Supabase). DATABASE_URL
-  // should be the pooled string the app uses at runtime, DIRECT_URL the
-  // unpooled string Prisma CLI commands (migrate, studio) use instead,
-  // since schema-changing operations don't always play well through a
-  // transaction-mode pooler. If your provider only gives you one
-  // connection string, set both to the same value.
+  // DATABASE_URL is what the running app uses. On Aiven, point it at a
+  // PgBouncer pool URI (Console > service > Connection pools) ONLY if the
+  // service plan supports pooling (the free plan does not). DIRECT_URL is the
+  // plain service URI that Prisma CLI commands (migrate deploy/status,
+  // studio) use, because the schema engine does not work through PgBouncer.
+  // Without a pooler, set both to the same value.
   DIRECT_URL: z.string().optional(),
+  // Max Postgres connections this process may open. Only applied when
+  // DATABASE_URL does not already contain connection_limit. Keep it small
+  // enough that (instances x this value) stays well under the database's
+  // max_connections (20 on Aiven's free plan), allowing for deploy overlap.
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
   SESSION_COOKIE_NAME: z.string().default("myright_session"),
   CSRF_COOKIE_NAME: z.string().default("myright_csrf"),
   SESSION_TTL_DAYS: z.coerce.number().default(14),

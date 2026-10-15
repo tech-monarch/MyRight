@@ -3,12 +3,14 @@ import { hashPassword, verifyPassword } from "@/utils/password";
 import { generateSessionToken, hashToken } from "@/utils/session-token";
 import { AppError } from "@/utils/AppError";
 import { env } from "@/config/env";
+import { isUniqueConstraintError, withReadRetry } from "@/infrastructure/database/resilience";
 import type { User } from "@prisma/client";
 
 const SESSION_TTL_MS = env.SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
 
 export async function registerDisputant(input: { name: string; email: string; password: string }) {
-  const existing = await prisma.user.findUnique({ where: { email: input.email } });
+  // Read-only, so a bounded retry on transient connection errors is safe.
+  const existing = await withReadRetry(() => prisma.user.findUnique({ where: { email: input.email } }));
   if (existing) {
     // Intentionally vague: confirming "this email is already registered"
     // to an anonymous caller is a minor account enumeration leak. A real
@@ -18,22 +20,34 @@ export async function registerDisputant(input: { name: string; email: string; pa
   }
 
   const passwordHash = await hashPassword(input.password);
-  const user = await prisma.user.create({
-    data: {
-      role: "DISPUTANT",
-      name: input.name,
-      email: input.email,
-      passwordHash,
-    },
-  });
-
-  return user;
+  // The write is deliberately NOT retried: a lost acknowledgement must not
+  // be able to create a duplicate account.
+  try {
+    const user = await prisma.user.create({
+      data: {
+        role: "DISPUTANT",
+        name: input.name,
+        email: input.email,
+        passwordHash,
+      },
+    });
+    return user;
+  } catch (err) {
+    // Two simultaneous registrations for one email: the unique index wins,
+    // and the loser gets the same vague conflict as the check above.
+    if (isUniqueConstraintError(err)) {
+      throw AppError.conflict("Could not create an account with those details.");
+    }
+    throw err;
+  }
 }
 
 export async function authenticate(identifier: string, password: string): Promise<User> {
-  const user = await prisma.user.findFirst({
-    where: { OR: [{ email: identifier }, { username: identifier }] },
-  });
+  const user = await withReadRetry(() =>
+    prisma.user.findFirst({
+      where: { OR: [{ email: identifier }, { username: identifier }] },
+    })
+  );
 
   // Same error for "no such user" and "wrong password" so a caller cannot
   // use the login endpoint to discover which identifiers are registered.

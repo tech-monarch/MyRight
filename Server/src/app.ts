@@ -14,6 +14,7 @@ import { whatsappRouter } from "@/modules/admin/whatsapp.routes";
 import { whatsAppProvider } from "@/infrastructure/notifications/whatsapp.provider";
 import { errorHandler, notFoundHandler } from "@/middleware/errorHandler";
 import { apiRateLimiter } from "@/middleware/rateLimit";
+import { prisma } from "@/infrastructure/database/prisma";
 
 const app = express();
 
@@ -67,9 +68,29 @@ app.use("/api/sign", publicSigningRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(env.PORT, () => {
+const server = app.listen(env.PORT, () => {
   console.log(`MyRight API listening on port ${env.PORT} (${env.NODE_ENV})`);
 });
+
+// Render sends SIGTERM on deploy/restart. Stop accepting requests, let
+// in-flight ones finish, then close the Prisma pool once (not per request).
+let shuttingDown = false;
+function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`${signal} received, shutting down`);
+  const forceExit = setTimeout(() => process.exit(1), 10_000);
+  forceExit.unref();
+  server.close(() => {
+    prisma
+      .$disconnect()
+      .catch(() => undefined)
+      .finally(() => process.exit(0));
+  });
+  server.closeIdleConnections?.();
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 // Reconnects using the saved auth state on disk if this courthouse's
 // WhatsApp number was already linked in a previous run, does nothing

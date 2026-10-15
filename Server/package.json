@@ -14,7 +14,8 @@
     "seed": "tsx prisma/seed.ts",
     "ingest-knowledge": "tsx scripts/ingest-knowledge.ts",
     "evaluate-rag": "tsx scripts/evaluate-rag.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:check": "tsx scripts/db-check.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.658.1",

@@ -21,6 +21,18 @@ The build command is `npm run build`, which runs `prisma generate` before
 TypeScript compilation. Configure Render to run `npm run build` rather
 than `tsc && tsc-alias` directly, and use `npm start` as the start command.
 
+### Aiven PostgreSQL connections
+
+- `DATABASE_URL`: used by the running app. A PgBouncer pool URI only if the
+  Aiven plan has pooling (free plan: none, max 20 connections); otherwise the
+  Service URI. `DIRECT_URL`: always the plain Service URI (migrations, status).
+- Pool defaults (`connection_limit`, `pool_timeout`, `connect_timeout`) are
+  added at runtime only if the URL doesn't set them; `DATABASE_POOL_MAX`
+  controls the limit (default 5).
+- `npm run db:check` runs a read-only connectivity/schema check and prints no
+  credentials. `GET /health/db` runs `SELECT 1` through the live app.
+- Reads in auth retry up to 3 times on connection-loss errors; writes never do.
+
 ## What's in this milestone (on top of Milestones 5-8)
 
 - **Mediator scheduling** (`modules/mediation/`): a lawyer sets recurring
