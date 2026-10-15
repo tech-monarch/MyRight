@@ -32,7 +32,13 @@ app.set("trust proxy", 1);
 app.use(
   pinoHttp({
     genReqId: (req) => req.headers["x-request-id"]?.toString() ?? randomUUID(),
-    redact: ["req.headers.cookie", "req.headers.authorization"],
+    redact: [
+      "req.headers.cookie",
+      "req.headers.authorization",
+      'req.headers["x-csrf-token"]',
+      'req.headers["x-vercel-proxy-signature"]',
+      'res.headers["set-cookie"]',
+    ],
   })
 );
 

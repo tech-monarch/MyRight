@@ -39,6 +39,11 @@ const envSchema = z.object({
   // defaults below are current as of this milestone but will go stale.
   GEMINI_API_KEY: z.string().optional(),
   GEMINI_MODEL: z.string().default("gemini-3.5-flash"),
+  // Optional: tried once if GEMINI_MODEL is still overloaded/unavailable
+  // after retries. Verify the name is available to your key before setting.
+  GEMINI_FALLBACK_MODEL: z.string().optional(),
+  GEMINI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(20000),
+  GEMINI_RETRY_BASE_MS: z.coerce.number().int().min(1).max(10000).default(1000),
   GEMINI_EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
   GEMINI_EMBEDDING_DIMENSIONS: z.coerce.number().default(768),
   STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
