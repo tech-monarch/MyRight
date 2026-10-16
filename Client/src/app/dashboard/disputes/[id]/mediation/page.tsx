@@ -25,6 +25,7 @@ export default function MediationRequestPage({ params }: { params: { id: string 
   const [submitError, setSubmitError] = useState("");
   const [done, setDone] = useState(false);
   const [inviteUrl, setInviteUrl] = useState("");
+  const [alreadyRequested, setAlreadyRequested] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function handleSubmit() {
@@ -33,6 +34,7 @@ export default function MediationRequestPage({ params }: { params: { id: string 
     try {
       const result = await requestMediation(params.id, { contactMethod, contact: contact || undefined });
       setInviteUrl(result.inviteUrl ?? "");
+      setAlreadyRequested(Boolean(result.alreadyRequested));
       setDone(true);
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : "Couldn't send that request. Please try again.");
@@ -96,6 +98,11 @@ export default function MediationRequestPage({ params }: { params: { id: string 
                   </div>
                 </div>
               </>
+            ) : alreadyRequested ? (
+              <p className="mt-2 text-sm text-text-muted">
+                Mediation had already been requested for this case, so nothing more was sent. You&apos;ll be notified
+                here when anything changes.
+              </p>
             ) : (
               <p className="mt-2 text-sm text-text-muted">
                 Your request has been sent. A mediator will be assigned and you&apos;ll be notified here.

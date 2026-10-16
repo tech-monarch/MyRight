@@ -37,8 +37,8 @@ export function createDispute(input: CreateDisputeInput): Promise<Dispute> {
 export function requestMediation(
   id: string,
   input: { contactMethod?: "email" | "phone"; contact?: string }
-): Promise<Dispute & { inviteUrl?: string }> {
-  return apiFetch<Dispute & { inviteUrl?: string }>(`/api/disputes/${id}/mediation-request`, { method: "POST", body: input });
+): Promise<Dispute & { inviteUrl?: string; alreadyRequested?: boolean }> {
+  return apiFetch<Dispute & { inviteUrl?: string; alreadyRequested?: boolean }>(`/api/disputes/${id}/mediation-request`, { method: "POST", body: input });
 }
 
 export function resendInvitation(id: string): Promise<{ inviteUrl: string }> {
