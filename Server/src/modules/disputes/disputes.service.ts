@@ -107,14 +107,20 @@ export async function transitionStatus(
   }
 
   return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const dispute = await tx.dispute.update({
-      where: { id: disputeId },
+    // Compare-and-set: only move the case if it is STILL in the status the
+    // caller saw. Two requests racing (a double click, two tabs) can't both
+    // win, so the history and any follow-up notifications happen once.
+    const moved = await tx.dispute.updateMany({
+      where: { id: disputeId, status: currentStatus },
       data: { status: nextStatus },
     });
+    if (moved.count === 0) {
+      throw AppError.conflict("This case was just updated. Please refresh and try again.");
+    }
     await tx.disputeStatusHistory.create({
       data: { disputeId, status: nextStatus, changedById, note },
     });
-    return dispute;
+    return tx.dispute.findUniqueOrThrow({ where: { id: disputeId } });
   });
 }
 

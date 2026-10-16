@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
-import { prisma } from "@/infrastructure/database/prisma";
-import { notifyUser } from "@/infrastructure/notifications/notification.service";
 import * as invitationsService from "@/modules/invitations/invitations.service";
+import * as mediationRequestService from "@/modules/disputes/mediation-request.service";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { requireParam } from "@/utils/requireParam";
 import { AppError } from "@/utils/AppError";
@@ -74,85 +73,31 @@ export const requestMediation = asyncHandler(async (req: Request, res: Response)
     throw AppError.forbidden("Only the case owner can request mediation.");
   }
 
-  let updated = await disputesService.transitionStatus(
-    dispute.id,
-    dispute.status,
-    "MEDIATION_REQUESTED",
-    req.user!.id,
-    req.body.contact ? `Invited other party via ${req.body.contactMethod}: ${req.body.contact}` : undefined
-  );
-
-  // Use the contact given now, falling back to the one collected at intake.
-  // Only fill otherPartyContact if it was empty, never overwrite intake data.
-  const contact = (req.body.contact as string | undefined) || dispute.otherPartyContact || undefined;
-  if (req.body.contact && !dispute.otherPartyContact) {
-    updated = await prisma.dispute.update({ where: { id: dispute.id }, data: { otherPartyContact: req.body.contact } });
-  }
-
-  let inviteUrl: string | undefined;
-  if (contact) {
-    updated = await disputesService.transitionStatus(
-      dispute.id,
-      "MEDIATION_REQUESTED",
-      "AWAITING_OTHER_PARTY",
-      req.user!.id,
-      "Invitation sent to the other party"
-    );
-    // The case now waits for their answer (see invitations.service).
-    updated = await prisma.dispute.update({
-      where: { id: dispute.id },
-      data: { otherPartyResponse: "PENDING", otherPartyRespondedAt: null },
-    });
-    ({ respondUrl: inviteUrl } = await invitationsService.sendInvitation({
-      disputeId: dispute.id,
-      disputeTitle: dispute.title,
-      requesterName: req.user!.name,
-      contact,
-    }));
-  }
-
-  // If a mediator was already assigned and nothing is left to wait for, mediation proceeds.
-  if (dispute.assignment) {
-    const next = await disputesService.markMediatorAssignedIfReady(
-      dispute.id,
-      updated.status,
-      req.user!.id,
-      updated.otherPartyResponse
-    );
-    updated = { ...updated, status: next };
-
-    // Let the assigned mediator know mediation was requested. Never allowed to fail the request.
-    try {
-      const lawyer = await prisma.user.findUnique({
-        where: { id: dispute.assignment.lawyerId },
-        select: { phone: true, email: true, courthouseId: true },
-      });
-      await notifyUser({
-        userId: dispute.assignment.lawyerId,
-        phone: lawyer?.phone,
-        email: lawyer?.email,
-        courthouseId: lawyer?.courthouseId,
-        template: "mediation_requested",
-        subject: "Mediation requested on your case",
-        message: `MyRight: mediation has been requested on "${dispute.title}".`,
-        link: `/lawyer/cases/${dispute.id}`,
-      });
-    } catch (err) {
-      console.error("Mediation-requested notification failed", err instanceof Error ? err.name : "unknown");
-    }
-  }
-
-  await writeAuditLog({
-    actorId: req.user!.id,
-    actorLabel: req.user!.name,
-    action: "MEDIATION_REQUESTED",
-    targetType: "Dispute",
-    targetId: dispute.id,
-    result: "SUCCESS",
+  const result = await mediationRequestService.requestMediation({
+    dispute,
+    requesterId: req.user!.id,
+    requesterName: req.user!.name,
+    contactMethod: req.body.contactMethod,
+    contact: req.body.contact,
   });
 
+  // A repeat request changes nothing, so it isn't logged as a new event.
+  if (!result.alreadyRequested) {
+    await writeAuditLog({
+      actorId: req.user!.id,
+      actorLabel: req.user!.name,
+      action: "MEDIATION_REQUESTED",
+      targetType: "Dispute",
+      targetId: dispute.id,
+      result: "SUCCESS",
+    });
+  }
+
   // inviteUrl lets the owner copy and share the link by hand if automatic delivery fails.
-  res.json({ success: true, data: { ...updated, inviteUrl } });
+  res.json({
+    success: true,
+    data: { ...result.dispute, inviteUrl: result.inviteUrl, alreadyRequested: result.alreadyRequested },
+  });
 });
 
 export const getDisputeHistory = asyncHandler(async (req: Request, res: Response) => {

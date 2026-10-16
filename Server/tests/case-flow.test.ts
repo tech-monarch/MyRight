@@ -2,10 +2,22 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const historyCreate = vi.fn();
 const disputeUpdate = vi.fn();
+let lastStatus = "";
+let matches = true; // whether the compare-and-set finds the case still in the status the caller saw
 vi.mock("../src/infrastructure/database/prisma", () => ({
   prisma: {
     $transaction: async (fn: (tx: unknown) => unknown) =>
-      fn({ dispute: { update: disputeUpdate }, disputeStatusHistory: { create: historyCreate } }),
+      fn({
+        dispute: {
+          updateMany: async (a: { data: { status: string } }) => {
+            disputeUpdate(a);
+            if (matches) lastStatus = a.data.status;
+            return { count: matches ? 1 : 0 };
+          },
+          findUniqueOrThrow: async () => ({ status: lastStatus }),
+        },
+        disputeStatusHistory: { create: historyCreate },
+      }),
   },
 }));
 
@@ -17,7 +29,8 @@ beforeAll(async () => {
 });
 beforeEach(() => {
   historyCreate.mockReset();
-  disputeUpdate.mockReset().mockImplementation(async ({ data }: { data: { status: string } }) => ({ status: data.status }));
+  disputeUpdate.mockReset();
+  matches = true;
 });
 
 const walk = async (from: string, steps: string[]) => {
@@ -36,6 +49,11 @@ describe("case status flow", () => {
   });
   it("path without an other-party contact skips straight to MEDIATOR_ASSIGNED", async () => {
     await expect(walk("MEDIATION_REQUESTED", ["MEDIATOR_ASSIGNED", "IN_MEDIATION", "RESOLVED"])).resolves.toBeUndefined();
+  });
+  it("loses gracefully when the case changed since it was read (a double click): conflict, no history written", async () => {
+    matches = false;
+    await expect(svc.transitionStatus("d1", "UNDER_REVIEW", "MEDIATION_REQUESTED", "u1")).rejects.toMatchObject({ statusCode: 409 });
+    expect(historyCreate).not.toHaveBeenCalled();
   });
   it("still refuses nonsense jumps", async () => {
     await expect(walk("MEDIATION_REQUESTED", ["IN_MEDIATION"])).rejects.toThrow();
