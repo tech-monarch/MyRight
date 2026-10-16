@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Label, Input, Textarea } from "@/components/ui/Field";
 import { useApi } from "@/lib/useApi";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import { listSessions, createSession, cancelSession, submitOutcomeNotes } from "@/lib/mediation-client";
+import { listSessions, createSession, cancelSession, submitOutcomeNotes, getJoinUrl } from "@/lib/mediation-client";
 import { ApiError } from "@/lib/api";
 import type { Dispute, MediationSession } from "@/lib/types";
 
@@ -90,6 +90,28 @@ function SessionRow({
 }) {
   const isPast = new Date(session.scheduledEnd) < new Date();
   const canJoin = session.status === "SCHEDULED" && !!session.meetingUrl;
+  const [joinUrl, setJoinUrl] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState("");
+
+  // Rooms are private: the server mints a personal, short-lived link for
+  // whoever is signed in (the mediator's lets them admit people from the lobby).
+  async function handleToggle() {
+    if (isActiveCall) {
+      onToggleCall();
+      return;
+    }
+    setJoining(true);
+    setJoinError("");
+    try {
+      setJoinUrl(await getJoinUrl(disputeId, session.id));
+      onToggleCall();
+    } catch (err) {
+      setJoinError(err instanceof ApiError ? err.message : "Couldn't open the call. Please try again.");
+    } finally {
+      setJoining(false);
+    }
+  }
 
   return (
     <li className="rounded-lg border border-border">
@@ -119,10 +141,11 @@ function SessionRow({
         <div className="flex shrink-0 items-center gap-3">
           {canJoin && (
             <button
-              onClick={onToggleCall}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-blue hover:underline"
+              onClick={handleToggle}
+              disabled={joining}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-blue hover:underline disabled:opacity-60"
             >
-              <Video size={12} /> {isActiveCall ? "Hide call" : "Join call"}
+              {joining ? <Loader2 size={12} className="animate-spin" /> : <Video size={12} />} {isActiveCall ? "Hide call" : "Join call"}
               <ChevronDown size={12} className={isActiveCall ? "rotate-180 transition-transform" : "transition-transform"} />
             </button>
           )}
@@ -138,10 +161,12 @@ function SessionRow({
         </div>
       </div>
 
-      {isActiveCall && session.meetingUrl && (
+      {joinError && <p className="border-t border-border px-3.5 py-2 text-xs text-danger">{joinError}</p>}
+
+      {isActiveCall && joinUrl && (
         <div className="border-t border-border bg-navy">
           <iframe
-            src={session.meetingUrl}
+            src={joinUrl}
             allow="camera; microphone; fullscreen; display-capture; autoplay"
             className="aspect-video w-full"
             style={{ border: 0 }}

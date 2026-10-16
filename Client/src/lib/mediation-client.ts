@@ -34,3 +34,8 @@ export function submitOutcomeNotes(
     body: { outcomeNotes },
   });
 }
+
+export async function getJoinUrl(disputeId: string, sessionId: string): Promise<string> {
+  const res = await apiFetch<{ url: string }>(`/api/disputes/${disputeId}/sessions/${sessionId}/join`);
+  return res.url;
+}
