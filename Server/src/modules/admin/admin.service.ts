@@ -2,6 +2,8 @@ import { prisma } from "@/infrastructure/database/prisma";
 import { hashPassword } from "@/utils/password";
 import { generateTempPassword } from "@/utils/temp-password";
 import { AppError } from "@/utils/AppError";
+import { markMediatorAssignedIfReady } from "@/modules/disputes/disputes.service";
+import { notifyLawyerAssigned } from "@/infrastructure/notifications/notification.service";
 import type { UserStatus } from "@prisma/client";
 
 export function listLawyers(courthouseId: string) {
@@ -72,11 +74,32 @@ export async function assignCase(lawyerId: string, courthouseId: string, dispute
   // upsert: assigning a case that already has a different lawyer replaces
   // the assignment (see the schema comment on CaseAssignment for why this
   // is a single row rather than an append-only history table).
-  return prisma.caseAssignment.upsert({
+  const assignment = await prisma.caseAssignment.upsert({
     where: { disputeId },
     create: { disputeId, lawyerId, assignedById },
     update: { lawyerId, assignedById, assignedAt: new Date() },
   });
+
+  // If mediation was already requested, the case is now "mediator assigned".
+  await markMediatorAssignedIfReady(disputeId, dispute.status, assignedById);
+
+  // Tell the lawyer. Never allowed to fail the assignment itself.
+  try {
+    const lawyer = await prisma.user.findUnique({
+      where: { id: lawyerId },
+      select: { phone: true, email: true },
+    });
+    await notifyLawyerAssigned({
+      lawyerId,
+      phone: lawyer?.phone,
+      email: lawyer?.email,
+      disputeTitle: dispute.title,
+    });
+  } catch (err) {
+    console.error("Lawyer-assigned notification failed", err instanceof Error ? err.name : "unknown");
+  }
+
+  return assignment;
 }
 
 export async function removeAssignment(disputeId: string, courthouseId: string) {

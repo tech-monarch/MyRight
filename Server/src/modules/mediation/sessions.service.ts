@@ -1,7 +1,7 @@
 import { prisma } from "@/infrastructure/database/prisma";
-import { createSessionRoom, deleteRoom, getRoomPresence } from "@/infrastructure/video/daily.provider";
-import { notifySessionScheduled } from "@/infrastructure/notifications/notification.service";
-import { transitionStatus } from "@/modules/disputes/disputes.service";
+import { createMeetingToken, createSessionRoom, deleteRoom, getRoomPresence } from "@/infrastructure/video/daily.provider";
+import { notifySessionScheduled, splitContact } from "@/infrastructure/notifications/notification.service";
+import { markMediatorAssignedIfReady, transitionStatus } from "@/modules/disputes/disputes.service";
 import { AppError } from "@/utils/AppError";
 
 export function listSessions(disputeId: string) {
@@ -48,37 +48,75 @@ export async function createSession(input: {
     },
   });
 
-  // Scheduling a session is a meaningful enough milestone to move the
-  // case forward automatically, rather than requiring a separate manual
-  // status update. Only advances forward (see disputes.service.ts's
-  // ALLOWED_TRANSITIONS), calling this on a case already further along
-  // (e.g. scheduling a second session while already IN_MEDIATION) is a
-  // no-op error we deliberately swallow rather than block scheduling on.
-  await transitionStatus(dispute.id, dispute.status, "IN_MEDIATION", input.createdById, "Mediation session scheduled").catch(
-    () => undefined
-  );
+  // Scheduling a session moves the case into IN_MEDIATION. Cases that never
+  // got a "mediator assigned" step (assigned before this fix) are first
+  // brought to MEDIATOR_ASSIGNED so the transition is valid. A case already
+  // IN_MEDIATION (second session) stays as is; any other unexpected state is
+  // logged rather than silently ignored.
+  try {
+    const current = await markMediatorAssignedIfReady(dispute.id, dispute.status, input.createdById);
+    if (current === "MEDIATOR_ASSIGNED") {
+      await transitionStatus(dispute.id, current, "IN_MEDIATION", input.createdById, "Mediation session scheduled");
+    }
+  } catch (err) {
+    console.error("Could not advance case status after scheduling", dispute.status, err instanceof Error ? err.message : "unknown");
+  }
 
-  await notifySessionScheduled({
-    userId: dispute.ownerId,
-    phone: (await prisma.user.findUnique({ where: { id: dispute.ownerId }, select: { phone: true } }))?.phone,
-    disputeTitle: dispute.title,
-    scheduledStart: input.scheduledStart,
-    meetingUrl,
-  });
-
-  // otherPartyContact is freeform (collected at intake), only attempt a
-  // WhatsApp send if it looks like a phone number rather than an email,
-  // see the module README note on this simplification.
-  if (dispute.otherPartyContact && !dispute.otherPartyContact.includes("@")) {
+  // Notify both sides, each over whichever channel(s) they have. Never
+  // allowed to fail the scheduling itself.
+  try {
+    const owner = await prisma.user.findUnique({ where: { id: dispute.ownerId }, select: { phone: true, email: true } });
     await notifySessionScheduled({
-      phone: dispute.otherPartyContact,
+      userId: dispute.ownerId,
+      phone: owner?.phone,
+      email: owner?.email,
       disputeTitle: dispute.title,
       scheduledStart: input.scheduledStart,
       meetingUrl,
     });
+    // otherPartyContact is freeform (collected at intake): an "@" means email, otherwise a phone number.
+    if (dispute.otherPartyContact) {
+      await notifySessionScheduled({
+        ...splitContact(dispute.otherPartyContact),
+        disputeTitle: dispute.title,
+        scheduledStart: input.scheduledStart,
+        meetingUrl,
+        isOtherParty: true,
+      });
+    }
+  } catch (err) {
+    console.error("Session notifications failed", err instanceof Error ? err.name : "unknown");
   }
 
   return session;
+}
+
+/**
+ * The URL a signed-in participant opens to join. Daily rooms are private, so
+ * each person gets a short-lived token minted here: the mediator (lawyer or
+ * superadmin) as room owner so they can admit people from the lobby, the
+ * case owner as a regular participant. Manual-link sessions just return the
+ * link that was pasted in.
+ */
+export async function getJoinUrl(input: {
+  sessionId: string;
+  disputeId: string;
+  userName: string;
+  isMediator: boolean;
+}): Promise<string> {
+  const session = await prisma.mediationSession.findFirst({ where: { id: input.sessionId, disputeId: input.disputeId } });
+  if (!session) throw AppError.notFound("Session not found");
+  if (session.status !== "SCHEDULED") throw AppError.badRequest("This session is no longer open to join.");
+  if (!session.meetingUrl) throw AppError.badRequest("This session has no meeting link.");
+  if (!session.dailyRoomName) return session.meetingUrl;
+
+  const token = await createMeetingToken({
+    roomName: session.dailyRoomName,
+    userName: input.userName,
+    isOwner: input.isMediator,
+    scheduledEnd: session.scheduledEnd,
+  });
+  return `${session.meetingUrl}?t=${encodeURIComponent(token)}`;
 }
 
 export async function cancelSession(sessionId: string, disputeId: string) {

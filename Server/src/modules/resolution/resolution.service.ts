@@ -4,7 +4,7 @@ import { hashToken } from "@/utils/session-token";
 import { AppError } from "@/utils/AppError";
 import { env } from "@/config/env";
 import { transitionStatus } from "@/modules/disputes/disputes.service";
-import { notifySigningRequest, notifyResolutionFullySigned } from "@/infrastructure/notifications/notification.service";
+import { notifySigningRequest, notifyResolutionFullySigned, splitContact } from "@/infrastructure/notifications/notification.service";
 
 const SIGNING_TOKEN_TTL_DAYS = 21;
 
@@ -35,9 +35,9 @@ export async function createResolution(input: { disputeId: string; createdById: 
 
   const signingUrl = `${env.APP_URL}/sign/${rawToken}`;
 
-  if (dispute.otherPartyContact && !dispute.otherPartyContact.includes("@")) {
+  if (dispute.otherPartyContact) {
     await notifySigningRequest({
-      phone: dispute.otherPartyContact,
+      ...splitContact(dispute.otherPartyContact),
       disputeTitle: dispute.title,
       signingUrl,
     });
@@ -56,13 +56,18 @@ async function finalizeIfFullySigned(resolutionId: string, disputeId: string) {
 
   await prisma.resolution.update({ where: { id: resolutionId }, data: { status: "FULLY_SIGNED" } });
   await transitionStatus(disputeId, dispute.status, "RESOLVED", dispute.ownerId, "Both parties signed the resolution").catch(
-    () => undefined
+    (err) => console.error("Could not mark case resolved from", dispute.status, err instanceof Error ? err.message : "unknown")
   );
 
-  const owner = await prisma.user.findUnique({ where: { id: dispute.ownerId }, select: { phone: true } });
-  await notifyResolutionFullySigned({ userId: dispute.ownerId, phone: owner?.phone, disputeTitle: dispute.title });
-  if (dispute.otherPartyContact && !dispute.otherPartyContact.includes("@")) {
-    await notifyResolutionFullySigned({ phone: dispute.otherPartyContact, disputeTitle: dispute.title });
+  const owner = await prisma.user.findUnique({ where: { id: dispute.ownerId }, select: { phone: true, email: true } });
+  await notifyResolutionFullySigned({
+    userId: dispute.ownerId,
+    phone: owner?.phone,
+    email: owner?.email,
+    disputeTitle: dispute.title,
+  });
+  if (dispute.otherPartyContact) {
+    await notifyResolutionFullySigned({ ...splitContact(dispute.otherPartyContact), disputeTitle: dispute.title });
   }
 }
 

@@ -1,4 +1,6 @@
 import type { Request, Response } from "express";
+import { prisma } from "@/infrastructure/database/prisma";
+import { notifyMediationInvite, splitContact } from "@/infrastructure/notifications/notification.service";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { requireParam } from "@/utils/requireParam";
 import { AppError } from "@/utils/AppError";
@@ -71,13 +73,41 @@ export const requestMediation = asyncHandler(async (req: Request, res: Response)
     throw AppError.forbidden("Only the case owner can request mediation.");
   }
 
-  const updated = await disputesService.transitionStatus(
+  let updated = await disputesService.transitionStatus(
     dispute.id,
     dispute.status,
     "MEDIATION_REQUESTED",
     req.user!.id,
     req.body.contact ? `Invited other party via ${req.body.contactMethod}: ${req.body.contact}` : undefined
   );
+
+  // Use the contact given now, falling back to the one collected at intake.
+  // Only fill otherPartyContact if it was empty, never overwrite intake data.
+  const contact = (req.body.contact as string | undefined) || dispute.otherPartyContact || undefined;
+  if (req.body.contact && !dispute.otherPartyContact) {
+    updated = await prisma.dispute.update({ where: { id: dispute.id }, data: { otherPartyContact: req.body.contact } });
+  }
+
+  if (contact) {
+    updated = await disputesService.transitionStatus(
+      dispute.id,
+      "MEDIATION_REQUESTED",
+      "AWAITING_OTHER_PARTY",
+      req.user!.id,
+      "Invitation sent to the other party"
+    );
+    await notifyMediationInvite({
+      ...splitContact(contact),
+      requesterName: req.user!.name,
+      disputeTitle: dispute.title,
+    });
+  }
+
+  // If a mediator was already assigned, mediation can proceed straight away.
+  if (dispute.assignment) {
+    const next = await disputesService.markMediatorAssignedIfReady(dispute.id, updated.status, req.user!.id);
+    updated = { ...updated, status: next };
+  }
 
   await writeAuditLog({
     actorId: req.user!.id,

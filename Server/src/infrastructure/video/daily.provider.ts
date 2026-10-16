@@ -89,20 +89,19 @@ export async function createSessionRoom(input: {
     method: "POST",
     body: {
       name: `mediation-${input.disputeId}-${Date.now()}`,
-      // Public rather than requiring per-participant meeting tokens: the
-      // disputant and the other party have no Daily accounts, and this
-      // matches how the link is already delivered (WhatsApp/email, same
-      // as the old Meet link). The real access control is
-      // enable_knocking below, an attacker guessing a room name is
-      // impractical, but even someone with the link cannot get into an
-      // active session without the mediator explicitly admitting them.
-      privacy: "public",
+      // Private: per Daily's docs, enable_knocking (the waiting room) only
+      // works for private rooms, and only an is_owner meeting token can
+      // admit people. The mediator and the case owner join with tokens
+      // minted by this server (see createMeetingToken); the other party,
+      // who has no account, opens the room link and waits in the lobby
+      // until the mediator lets them in.
+      privacy: "private",
       properties: {
         nbf,
         exp,
         eject_at_room_exp: true,
         max_participants: 10,
-        enable_knocking: true, // real waiting room, mediator admits each party
+        enable_knocking: true, // lobby for anyone without a token; the owner admits them
         enable_breakout_rooms: true, // supports caucusing (mediator meeting privately with one side)
         enable_screenshare: true,
         enable_chat: true,
@@ -115,6 +114,36 @@ export async function createSessionRoom(input: {
   });
 
   return parseDailyResponse(createdRoomSchema, data, "room creation");
+}
+
+const meetingTokenSchema = z.object({ token: z.string().min(1) });
+
+/**
+ * A short-lived token for one signed-in participant. Always bound to this
+ * one room (a token without room_name would open any room on the Daily
+ * domain). The mediator gets is_owner so they can admit people from the
+ * lobby; everyone else joins as a regular participant.
+ */
+export async function createMeetingToken(input: {
+  roomName: string;
+  userName: string;
+  isOwner: boolean;
+  scheduledEnd: Date;
+}): Promise<string> {
+  const exp = Math.floor(input.scheduledEnd.getTime() / 1000) + 2 * 60 * 60;
+  const data = await dailyFetch("/meeting-tokens", {
+    method: "POST",
+    body: {
+      properties: {
+        room_name: input.roomName,
+        user_name: input.userName,
+        is_owner: input.isOwner,
+        exp,
+        eject_at_token_exp: true,
+      },
+    },
+  });
+  return parseDailyResponse(meetingTokenSchema, data, "meeting token").token;
 }
 
 export async function deleteRoom(roomName: string): Promise<void> {

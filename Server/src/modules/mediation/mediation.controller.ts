@@ -122,3 +122,17 @@ export const submitOutcomeNotes = asyncHandler(async (req: Request, res: Respons
 
   res.json({ success: true, data: session });
 });
+
+export const getJoinUrl = asyncHandler(async (req: Request, res: Response) => {
+  const disputeId = requireParam(req, "disputeId");
+  const dispute = await disputesService.getDisputeOr404(disputeId);
+  if (!canAccessDispute(req.user!, dispute, dispute.assignment)) throw AppError.notFound("Dispute not found");
+
+  const url = await sessionsService.getJoinUrl({
+    sessionId: requireParam(req, "sessionId"),
+    disputeId,
+    userName: req.user!.name,
+    isMediator: req.user!.role === "LAWYER" || req.user!.role === "SUPERADMIN",
+  });
+  res.json({ success: true, data: { url } });
+});

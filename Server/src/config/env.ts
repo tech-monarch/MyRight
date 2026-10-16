@@ -68,7 +68,18 @@ const envSchema = z.object({
   // WhatsApp via Baileys (see infrastructure/notifications/whatsapp.provider.ts).
   // Off by default, since it requires scanning a QR code to link a real
   // WhatsApp number, not just an env var, see that file and the README.
-  WHATSAPP_ENABLED: z.coerce.boolean().default(false),
+  // NOT z.coerce.boolean(): that turns the string "false" into true
+  // (any non-empty string is truthy), so WHATSAPP_ENABLED=false would
+  // have switched WhatsApp ON. Parse the text explicitly instead.
+  WHATSAPP_ENABLED: z.preprocess(
+    (v) => (typeof v === "string" ? ["true", "1", "yes", "on"].includes(v.trim().toLowerCase()) : v),
+    z.boolean().default(false)
+  ),
+  // Email goes over Resend's HTTPS API, not SMTP: Render blocks outbound
+  // SMTP ports on free instances (and port 25 everywhere). Both must be set
+  // for email to be active; EMAIL_FROM must be on a domain verified in Resend.
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
   WHATSAPP_AUTH_DIR: z.string().default("./whatsapp-auth"),
 
   APP_URL: z.string().url().default("http://localhost:3000"),

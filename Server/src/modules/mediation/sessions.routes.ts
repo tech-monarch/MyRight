@@ -11,6 +11,7 @@ sessionsRouter.use(requireAuth);
 
 sessionsRouter.get("/", mediationController.listSessions);
 sessionsRouter.post("/", requireCsrf, validateBody(createSessionSchema), mediationController.createSession);
+sessionsRouter.get("/:sessionId/join", mediationController.getJoinUrl);
 sessionsRouter.post("/:sessionId/cancel", requireCsrf, mediationController.cancelSession);
 sessionsRouter.post(
   "/:sessionId/outcome",

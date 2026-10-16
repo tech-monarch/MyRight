@@ -84,7 +84,9 @@ export async function updateDispute(id: string, input: Partial<{
 const ALLOWED_TRANSITIONS: Record<DisputeStatus, DisputeStatus[]> = {
   DRAFT: ["UNDER_REVIEW", "WITHDRAWN"],
   UNDER_REVIEW: ["MEDIATION_REQUESTED", "WITHDRAWN"],
-  MEDIATION_REQUESTED: ["AWAITING_OTHER_PARTY", "WITHDRAWN"],
+  // MEDIATOR_ASSIGNED is allowed directly from here too: a case with no
+  // other-party contact never passes through AWAITING_OTHER_PARTY.
+  MEDIATION_REQUESTED: ["AWAITING_OTHER_PARTY", "MEDIATOR_ASSIGNED", "WITHDRAWN"],
   AWAITING_OTHER_PARTY: ["MEDIATOR_ASSIGNED", "WITHDRAWN"],
   MEDIATOR_ASSIGNED: ["IN_MEDIATION", "WITHDRAWN"],
   IN_MEDIATION: ["RESOLVED", "WITHDRAWN"],
@@ -114,4 +116,22 @@ export async function transitionStatus(
     });
     return dispute;
   });
+}
+
+/**
+ * Moves a case to MEDIATOR_ASSIGNED once a mediator is on it AND mediation
+ * has been requested. Does nothing for any other status (e.g. a lawyer
+ * assigned while the case is still UNDER_REVIEW stays UNDER_REVIEW until the
+ * owner actually requests mediation), so it is safe to call from both
+ * "lawyer assigned" and "mediation requested", whichever happens second.
+ * Returns the status the case is in afterwards.
+ */
+export async function markMediatorAssignedIfReady(
+  disputeId: string,
+  currentStatus: DisputeStatus,
+  changedById: string
+): Promise<DisputeStatus> {
+  if (currentStatus !== "MEDIATION_REQUESTED" && currentStatus !== "AWAITING_OTHER_PARTY") return currentStatus;
+  await transitionStatus(disputeId, currentStatus, "MEDIATOR_ASSIGNED", changedById, "Mediator assigned");
+  return "MEDIATOR_ASSIGNED";
 }
