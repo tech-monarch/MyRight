@@ -41,12 +41,19 @@ describe("case status flow", () => {
     await expect(walk("MEDIATION_REQUESTED", ["IN_MEDIATION"])).rejects.toThrow();
     await expect(walk("DRAFT", ["RESOLVED"])).rejects.toThrow();
   });
-  it("markMediatorAssignedIfReady only acts once mediation was requested", async () => {
+  it("markMediatorAssignedIfReady only acts once mediation can actually proceed", async () => {
+    // Not requested yet, so nothing happens.
     expect(await svc.markMediatorAssignedIfReady("d1", "UNDER_REVIEW", "u1")).toBe("UNDER_REVIEW");
     expect(disputeUpdate).not.toHaveBeenCalled();
+    // No other-party invite: proceeds as soon as mediation is requested.
     expect(await svc.markMediatorAssignedIfReady("d1", "MEDIATION_REQUESTED", "u1")).toBe("MEDIATOR_ASSIGNED");
-    expect(await svc.markMediatorAssignedIfReady("d1", "AWAITING_OTHER_PARTY", "u1")).toBe("MEDIATOR_ASSIGNED");
-    expect(await svc.markMediatorAssignedIfReady("d1", "IN_MEDIATION", "u1")).toBe("IN_MEDIATION");
+    // Waiting on the other party: stays put until they ACCEPT.
+    expect(await svc.markMediatorAssignedIfReady("d1", "AWAITING_OTHER_PARTY", "u1", "PENDING")).toBe("AWAITING_OTHER_PARTY");
+    expect(await svc.markMediatorAssignedIfReady("d1", "AWAITING_OTHER_PARTY", "u1", "DECLINED")).toBe("AWAITING_OTHER_PARTY");
+    expect(await svc.markMediatorAssignedIfReady("d1", "AWAITING_OTHER_PARTY", "u1", null)).toBe("AWAITING_OTHER_PARTY");
+    expect(historyCreate).toHaveBeenCalledTimes(1);
+    expect(await svc.markMediatorAssignedIfReady("d1", "AWAITING_OTHER_PARTY", "u1", "ACCEPTED")).toBe("MEDIATOR_ASSIGNED");
+    expect(await svc.markMediatorAssignedIfReady("d1", "IN_MEDIATION", "u1", "ACCEPTED")).toBe("IN_MEDIATION");
     expect(historyCreate).toHaveBeenCalledTimes(2);
   });
 });

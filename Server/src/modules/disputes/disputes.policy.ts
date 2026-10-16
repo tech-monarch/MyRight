@@ -39,6 +39,11 @@ export function canAccessDispute(
     return assignment.lawyer.courthouseId === user.courthouseId;
   }
 
+  // COURTHOUSE_STAFF and PLATFORM_ADMIN fall through to here on purpose:
+  // staff manage lawyers and assignments from the case LIST, and the
+  // platform owner manages courthouses. Neither opens an individual case
+  // file (documents, AI chat, sessions, resolutions), which can hold
+  // confidential material.
   return false;
 }
 

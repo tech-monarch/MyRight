@@ -7,6 +7,7 @@ export interface AuthenticatedUser {
   name: string;
   courthouseId: string | null;
   mustChangePassword: boolean;
+  permissions: string[];
 }
 
 declare global {

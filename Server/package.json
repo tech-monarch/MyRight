@@ -15,7 +15,8 @@
     "ingest-knowledge": "tsx scripts/ingest-knowledge.ts",
     "evaluate-rag": "tsx scripts/evaluate-rag.ts",
     "test": "vitest run",
-    "db:check": "tsx scripts/db-check.ts"
+    "db:check": "tsx scripts/db-check.ts",
+    "platform-admin:create": "tsx scripts/create-platform-admin.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.658.1",

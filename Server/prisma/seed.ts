@@ -23,6 +23,18 @@ async function main() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { username: "platform" },
+    update: {},
+    create: {
+      role: "PLATFORM_ADMIN",
+      name: "Platform Admin",
+      username: "platform",
+      email: "platform@example.com",
+      passwordHash: await hashPassword("ChangeMe123!"),
+    },
+  });
+
   const lawyerPassword = await hashPassword("ChangeMe123!");
   await prisma.user.upsert({
     where: { username: "chinelo.adeyemi" },
@@ -67,7 +79,8 @@ async function main() {
   });
 
   console.log("Seed complete.");
-  console.log("SuperAdmin login: username=superadmin password=ChangeMe123!");
+  console.log("Platform admin login: username=platform password=ChangeMe123! (dev only, use npm run platform-admin:create in production)");
+  console.log("Courthouse admin login: username=superadmin password=ChangeMe123!");
   console.log("Lawyer login:     username=chinelo.adeyemi password=ChangeMe123! (must change on first login)");
   console.log("Disputant login:  email=adaeze@example.com password=ChangeMe123!");
 }

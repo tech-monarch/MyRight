@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as authController from "@/modules/auth/auth.controller";
-import { registerSchema, loginSchema, changePasswordSchema } from "@/modules/auth/auth.schemas";
+import { registerSchema, loginSchema, changePasswordSchema, updateContactSchema } from "@/modules/auth/auth.schemas";
 import { validateBody } from "@/middleware/validate";
 import { requireAuth } from "@/middleware/auth";
 import { requireCsrf } from "@/middleware/csrf";
@@ -13,6 +13,7 @@ authRouter.post("/register", authRateLimiter, validateBody(registerSchema), auth
 authRouter.post("/login", authRateLimiter, validateBody(loginSchema), authController.login);
 authRouter.post("/logout", requireAuth, requireCsrf, authController.logout);
 authRouter.get("/me", requireAuth, authController.me);
+authRouter.patch("/me", requireAuth, requireCsrf, validateBody(updateContactSchema), authController.updateContact);
 authRouter.post(
   "/change-password",
   requireAuth,

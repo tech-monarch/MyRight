@@ -4,7 +4,7 @@ import { hashToken } from "@/utils/session-token";
 import { AppError } from "@/utils/AppError";
 import { env } from "@/config/env";
 import { transitionStatus } from "@/modules/disputes/disputes.service";
-import { notifySigningRequest, notifyResolutionFullySigned, splitContact } from "@/infrastructure/notifications/notification.service";
+import { courthouseIdForDispute, notifySigningRequest, notifyResolutionFullySigned, splitContact } from "@/infrastructure/notifications/notification.service";
 
 const SIGNING_TOKEN_TTL_DAYS = 21;
 
@@ -38,6 +38,7 @@ export async function createResolution(input: { disputeId: string; createdById: 
   if (dispute.otherPartyContact) {
     await notifySigningRequest({
       ...splitContact(dispute.otherPartyContact),
+      courthouseId: await courthouseIdForDispute(input.disputeId),
       disputeTitle: dispute.title,
       signingUrl,
     });
@@ -60,14 +61,17 @@ async function finalizeIfFullySigned(resolutionId: string, disputeId: string) {
   );
 
   const owner = await prisma.user.findUnique({ where: { id: dispute.ownerId }, select: { phone: true, email: true } });
+  const courthouseId = await courthouseIdForDispute(disputeId);
   await notifyResolutionFullySigned({
     userId: dispute.ownerId,
     phone: owner?.phone,
     email: owner?.email,
+    courthouseId,
     disputeTitle: dispute.title,
+    link: `/dashboard/disputes/${disputeId}`,
   });
   if (dispute.otherPartyContact) {
-    await notifyResolutionFullySigned({ ...splitContact(dispute.otherPartyContact), disputeTitle: dispute.title });
+    await notifyResolutionFullySigned({ ...splitContact(dispute.otherPartyContact), courthouseId, disputeTitle: dispute.title });
   }
 }
 

@@ -80,7 +80,9 @@ const envSchema = z.object({
   // for email to be active; EMAIL_FROM must be on a domain verified in Resend.
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
-  WHATSAPP_AUTH_DIR: z.string().default("./whatsapp-auth"),
+  // Seeds the platform's default WhatsApp number on first boot if none is
+  // set yet. After that it is edited from the platform admin dashboard.
+  WHATSAPP_DEFAULT_NUMBER: z.string().optional(),
 
   APP_URL: z.string().url().default("http://localhost:3000"),
 });

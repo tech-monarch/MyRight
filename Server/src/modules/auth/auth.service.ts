@@ -8,7 +8,7 @@ import type { User } from "@prisma/client";
 
 const SESSION_TTL_MS = env.SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
 
-export async function registerDisputant(input: { name: string; email: string; password: string }) {
+export async function registerDisputant(input: { name: string; email: string; password: string; phone?: string }) {
   // Read-only, so a bounded retry on transient connection errors is safe.
   const existing = await withReadRetry(() => prisma.user.findUnique({ where: { email: input.email } }));
   if (existing) {
@@ -28,6 +28,7 @@ export async function registerDisputant(input: { name: string; email: string; pa
         role: "DISPUTANT",
         name: input.name,
         email: input.email,
+        phone: input.phone || null,
         passwordHash,
       },
     });
@@ -109,4 +110,26 @@ export async function changePassword(userId: string, currentPassword: string, ne
 export function toPublicUser(user: User) {
   const { passwordHash: _passwordHash, ...publicUser } = user;
   return publicUser;
+}
+
+/** Self-service contact details. Changing the email (the login identifier) needs the current password. */
+export async function updateContact(
+  userId: string,
+  input: { phone?: string; email?: string; currentPassword?: string }
+) {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const data: { phone?: string | null; email?: string } = {};
+
+  if (input.phone !== undefined) data.phone = input.phone === "" ? null : input.phone;
+
+  if (input.email !== undefined && input.email !== user.email) {
+    if (!input.currentPassword || !(await verifyPassword(input.currentPassword, user.passwordHash))) {
+      throw AppError.unauthorized("Enter your current password to change your email.");
+    }
+    const taken = await prisma.user.findUnique({ where: { email: input.email } });
+    if (taken) throw AppError.conflict("That email is already in use.");
+    data.email = input.email;
+  }
+
+  return prisma.user.update({ where: { id: userId }, data });
 }

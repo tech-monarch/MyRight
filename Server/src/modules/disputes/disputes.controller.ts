@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "@/infrastructure/database/prisma";
-import { notifyMediationInvite, splitContact } from "@/infrastructure/notifications/notification.service";
+import { notifyUser } from "@/infrastructure/notifications/notification.service";
+import * as invitationsService from "@/modules/invitations/invitations.service";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { requireParam } from "@/utils/requireParam";
 import { AppError } from "@/utils/AppError";
@@ -88,6 +89,7 @@ export const requestMediation = asyncHandler(async (req: Request, res: Response)
     updated = await prisma.dispute.update({ where: { id: dispute.id }, data: { otherPartyContact: req.body.contact } });
   }
 
+  let inviteUrl: string | undefined;
   if (contact) {
     updated = await disputesService.transitionStatus(
       dispute.id,
@@ -96,17 +98,48 @@ export const requestMediation = asyncHandler(async (req: Request, res: Response)
       req.user!.id,
       "Invitation sent to the other party"
     );
-    await notifyMediationInvite({
-      ...splitContact(contact),
-      requesterName: req.user!.name,
-      disputeTitle: dispute.title,
+    // The case now waits for their answer (see invitations.service).
+    updated = await prisma.dispute.update({
+      where: { id: dispute.id },
+      data: { otherPartyResponse: "PENDING", otherPartyRespondedAt: null },
     });
+    ({ respondUrl: inviteUrl } = await invitationsService.sendInvitation({
+      disputeId: dispute.id,
+      disputeTitle: dispute.title,
+      requesterName: req.user!.name,
+      contact,
+    }));
   }
 
-  // If a mediator was already assigned, mediation can proceed straight away.
+  // If a mediator was already assigned and nothing is left to wait for, mediation proceeds.
   if (dispute.assignment) {
-    const next = await disputesService.markMediatorAssignedIfReady(dispute.id, updated.status, req.user!.id);
+    const next = await disputesService.markMediatorAssignedIfReady(
+      dispute.id,
+      updated.status,
+      req.user!.id,
+      updated.otherPartyResponse
+    );
     updated = { ...updated, status: next };
+
+    // Let the assigned mediator know mediation was requested. Never allowed to fail the request.
+    try {
+      const lawyer = await prisma.user.findUnique({
+        where: { id: dispute.assignment.lawyerId },
+        select: { phone: true, email: true, courthouseId: true },
+      });
+      await notifyUser({
+        userId: dispute.assignment.lawyerId,
+        phone: lawyer?.phone,
+        email: lawyer?.email,
+        courthouseId: lawyer?.courthouseId,
+        template: "mediation_requested",
+        subject: "Mediation requested on your case",
+        message: `MyRight: mediation has been requested on "${dispute.title}".`,
+        link: `/lawyer/cases/${dispute.id}`,
+      });
+    } catch (err) {
+      console.error("Mediation-requested notification failed", err instanceof Error ? err.name : "unknown");
+    }
   }
 
   await writeAuditLog({
@@ -118,7 +151,8 @@ export const requestMediation = asyncHandler(async (req: Request, res: Response)
     result: "SUCCESS",
   });
 
-  res.json({ success: true, data: updated });
+  // inviteUrl lets the owner copy and share the link by hand if automatic delivery fails.
+  res.json({ success: true, data: { ...updated, inviteUrl } });
 });
 
 export const getDisputeHistory = asyncHandler(async (req: Request, res: Response) => {
@@ -128,4 +162,21 @@ export const getDisputeHistory = asyncHandler(async (req: Request, res: Response
   }
   const history = await disputesService.listStatusHistory(dispute.id);
   res.json({ success: true, data: history });
+});
+
+export const resendInvitation = asyncHandler(async (req: Request, res: Response) => {
+  const dispute = await disputesService.getDisputeOr404(requireParam(req, "id"));
+  if (req.user!.role !== "DISPUTANT" || dispute.ownerId !== req.user!.id) {
+    throw AppError.forbidden("Only the case owner can resend the invitation.");
+  }
+  if (dispute.status !== "AWAITING_OTHER_PARTY" || dispute.otherPartyResponse !== "PENDING" || !dispute.otherPartyContact) {
+    throw AppError.badRequest("There is no pending invitation to resend.");
+  }
+  const { respondUrl } = await invitationsService.sendInvitation({
+    disputeId: dispute.id,
+    disputeTitle: dispute.title,
+    requesterName: req.user!.name,
+    contact: dispute.otherPartyContact,
+  });
+  res.json({ success: true, data: { inviteUrl: respondUrl } });
 });

@@ -10,8 +10,11 @@ import { disputesRouter } from "@/modules/disputes/disputes.routes";
 import { adminRouter } from "@/modules/admin/admin.routes";
 import { mediationRouter } from "@/modules/mediation/mediation.routes";
 import { publicSigningRouter } from "@/modules/resolution/public-signing.routes";
-import { whatsappRouter } from "@/modules/admin/whatsapp.routes";
-import { whatsAppProvider } from "@/infrastructure/notifications/whatsapp.provider";
+import { courthouseWhatsappRouter, platformWhatsappRouter } from "@/modules/admin/whatsapp.routes";
+import { whatsAppManager } from "@/infrastructure/notifications/whatsapp.provider";
+import { platformRouter } from "@/modules/platform/platform.routes";
+import { notificationsRouter } from "@/modules/notifications/notifications.routes";
+import { publicInvitationsRouter } from "@/modules/invitations/invitations.routes";
 import { errorHandler, notFoundHandler } from "@/middleware/errorHandler";
 import { apiRateLimiter } from "@/middleware/rateLimit";
 import { prisma } from "@/infrastructure/database/prisma";
@@ -67,7 +70,11 @@ app.get("/health/db", async (_req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/disputes", disputesRouter);
 app.use("/api/admin", adminRouter);
-app.use("/api/admin/whatsapp", whatsappRouter);
+app.use("/api/admin/whatsapp", courthouseWhatsappRouter);
+app.use("/api/platform", platformRouter);
+app.use("/api/platform/whatsapp", platformWhatsappRouter);
+app.use("/api/notifications", notificationsRouter);
+app.use("/api/invitations", publicInvitationsRouter);
 app.use("/api/mediation", mediationRouter);
 app.use("/api/sign", publicSigningRouter);
 
@@ -98,9 +105,9 @@ function shutdown(signal: string) {
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
 
-// Reconnects using the saved auth state on disk if this courthouse's
-// WhatsApp number was already linked in a previous run, does nothing
-// (stays "disabled") if WHATSAPP_ENABLED is false.
-void whatsAppProvider.start();
+// Seeds the default WhatsApp number, then reconnects every number that was
+// linked before (credentials live in Postgres, so deploys don't unlink them).
+// Does nothing when WHATSAPP_ENABLED is false.
+void whatsAppManager.boot();
 
 export { app };

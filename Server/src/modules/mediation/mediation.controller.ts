@@ -71,6 +71,13 @@ export const createSession = asyncHandler(async (req: Request, res: Response) =>
   if (req.user!.role === "LAWYER" && dispute.assignment.lawyerId !== req.user!.id) {
     throw AppError.forbidden("You are not the mediator assigned to this case.");
   }
+  if (dispute.status === "AWAITING_OTHER_PARTY") {
+    throw AppError.badRequest(
+      dispute.otherPartyResponse === "DECLINED"
+        ? "The other party declined mediation, so a session can't be scheduled."
+        : "A session can be scheduled once the other party accepts the mediation invitation."
+    );
+  }
   const lawyerId = dispute.assignment.lawyerId;
 
   const session = await sessionsService.createSession({

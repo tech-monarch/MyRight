@@ -1,6 +1,6 @@
 import { prisma } from "@/infrastructure/database/prisma";
 import { createMeetingToken, createSessionRoom, deleteRoom, getRoomPresence } from "@/infrastructure/video/daily.provider";
-import { notifySessionScheduled, splitContact } from "@/infrastructure/notifications/notification.service";
+import { courthouseIdForDispute, notifySessionScheduled, splitContact } from "@/infrastructure/notifications/notification.service";
 import { markMediatorAssignedIfReady, transitionStatus } from "@/modules/disputes/disputes.service";
 import { AppError } from "@/utils/AppError";
 
@@ -54,7 +54,7 @@ export async function createSession(input: {
   // IN_MEDIATION (second session) stays as is; any other unexpected state is
   // logged rather than silently ignored.
   try {
-    const current = await markMediatorAssignedIfReady(dispute.id, dispute.status, input.createdById);
+    const current = await markMediatorAssignedIfReady(dispute.id, dispute.status, input.createdById, dispute.otherPartyResponse);
     if (current === "MEDIATOR_ASSIGNED") {
       await transitionStatus(dispute.id, current, "IN_MEDIATION", input.createdById, "Mediation session scheduled");
     }
@@ -66,18 +66,23 @@ export async function createSession(input: {
   // allowed to fail the scheduling itself.
   try {
     const owner = await prisma.user.findUnique({ where: { id: dispute.ownerId }, select: { phone: true, email: true } });
+    const courthouseId = await courthouseIdForDispute(dispute.id);
+    // The case owner joins from inside the app (their link carries a personal token), so they get the case page, not the raw room link.
     await notifySessionScheduled({
       userId: dispute.ownerId,
       phone: owner?.phone,
       email: owner?.email,
+      courthouseId,
       disputeTitle: dispute.title,
       scheduledStart: input.scheduledStart,
-      meetingUrl,
+      link: `/dashboard/disputes/${dispute.id}`,
     });
     // otherPartyContact is freeform (collected at intake): an "@" means email, otherwise a phone number.
+    // They have no account, so they get the room link and wait in the lobby until the mediator admits them.
     if (dispute.otherPartyContact) {
       await notifySessionScheduled({
         ...splitContact(dispute.otherPartyContact),
+        courthouseId,
         disputeTitle: dispute.title,
         scheduledStart: input.scheduledStart,
         meetingUrl,

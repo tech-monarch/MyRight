@@ -35,6 +35,7 @@ disputesRouter.post(
   validateBody(mediationRequestSchema),
   disputesController.requestMediation
 );
+disputesRouter.post("/:id/invitation/resend", requireCsrf, disputesController.resendInvitation);
 
 disputesRouter.use("/:disputeId/documents", documentsRouter);
 disputesRouter.use("/:disputeId", ragRouter);

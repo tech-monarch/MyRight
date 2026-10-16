@@ -5,6 +5,7 @@ import { hashToken } from "@/utils/session-token";
 import { AppError } from "@/utils/AppError";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { env } from "@/config/env";
+import { hasAnyPermission, type StaffPermission } from "@/utils/permissions";
 
 /**
  * Reads the session cookie, looks up the (hashed) token, and attaches the
@@ -36,6 +37,7 @@ export const requireAuth = asyncHandler(async (req: Request, _res: Response, nex
     name: session.user.name,
     courthouseId: session.user.courthouseId,
     mustChangePassword: session.user.mustChangePassword,
+    permissions: session.user.permissions,
   };
   next();
 });
@@ -52,6 +54,18 @@ export function requireRole(...roles: UserRole[]) {
     if (!roles.includes(req.user.role)) {
       return next(AppError.forbidden());
     }
+    next();
+  };
+}
+
+/**
+ * Courthouse admins pass automatically; staff pass only if they hold at
+ * least one of the listed delegated permissions.
+ */
+export function requireAnyPermission(...permissions: StaffPermission[]) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) return next(AppError.unauthorized());
+    if (!hasAnyPermission(req.user, permissions)) return next(AppError.forbidden());
     next();
   };
 }

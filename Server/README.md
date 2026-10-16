@@ -21,6 +21,22 @@ The build command is `npm run build`, which runs `prisma generate` before
 TypeScript compilation. Configure Render to run `npm run build` rather
 than `tsc && tsc-alias` directly, and use `npm start` as the start command.
 
+### Roles
+
+| Role | Who | Can do |
+| --- | --- | --- |
+| `PLATFORM_ADMIN` | The company running MyRight | Create courthouses and their admins, set the default WhatsApp number. **No access to individual cases.** |
+| `SUPERADMIN` | A courthouse admin | Everything in their courthouse: lawyers, staff, assignments, the courthouse WhatsApp number, the audit log. |
+| `COURTHOUSE_STAFF` | Delegated by a courthouse admin | Only `MANAGE_LAWYERS`, `ASSIGN_CASES` and/or `VIEW_CASES`, as granted. **Never opens a case file.** |
+| `LAWYER` | Created by a courthouse admin or staff | Their assigned cases. Email and phone are required. |
+| `DISPUTANT` | Self-registered | Their own cases. |
+
+Create the first platform owner once, locally: `npm run platform-admin:create -- --name "Name" --username handle --email a@b.com --phone 07012345678`.
+
+### Notifications and WhatsApp
+
+Every event creates an in-app notification (for people with accounts) and, where a phone/email is known, a WhatsApp and/or email message, each logged in `notification_logs`. WhatsApp (Baileys) sends from the courthouse's own linked number if it has one, otherwise from the platform default; set `WHATSAPP_DEFAULT_NUMBER` to seed the default, then link it from the platform dashboard with a pairing code or QR. Credentials are stored in Postgres so deploys don't unlink it. Email uses Resend (`RESEND_API_KEY`, `EMAIL_FROM`) because Render blocks SMTP.
+
 ### Aiven PostgreSQL connections
 
 - `DATABASE_URL`: used by the running app. A PgBouncer pool URI only if the

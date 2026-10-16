@@ -34,7 +34,21 @@ datasource db {
 enum UserRole {
   DISPUTANT
   LAWYER
+  // Courthouse administrator: full control inside their own courthouse.
   SUPERADMIN
+  // The platform owner (the company running MyRight): manages every
+  // courthouse, creates courthouse admins, sets the default WhatsApp number.
+  // Deliberately has NO access to individual disputes.
+  PLATFORM_ADMIN
+  // Courthouse staff delegated specific powers by a courthouse admin, see
+  // User.permissions.
+  COURTHOUSE_STAFF
+}
+
+enum PartyResponse {
+  PENDING
+  ACCEPTED
+  DECLINED
 }
 
 enum UserStatus {
@@ -93,6 +107,8 @@ model User {
   phone              String?
   passwordHash       String
   mustChangePassword Boolean    @default(false)
+  // Only meaningful for COURTHOUSE_STAFF: MANAGE_LAWYERS, ASSIGN_CASES, VIEW_CASES.
+  permissions        String[]   @default([])
   specialization     String?
   courthouseId       String?
   courthouse         Courthouse? @relation(fields: [courthouseId], references: [id])
@@ -108,6 +124,7 @@ model User {
   availability      MediatorAvailability[] @relation("LawyerAvailability")
   mediationSessions MediationSession[]     @relation("MediatorSessions")
   resolutionsCreated Resolution[]
+  notifications      Notification[]
 
   @@index([courthouseId])
   @@map("users")
@@ -146,7 +163,12 @@ model Dispute {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   deletedAt          DateTime?
+  // The other party's answer to the mediation invitation. Null until an
+  // invitation has been sent.
+  otherPartyResponse    PartyResponse?
+  otherPartyRespondedAt DateTime?
 
+  invitations   MediationInvitation[]
   assignment    CaseAssignment?
   documents     Document[]
   statusHistory DisputeStatusHistory[]
@@ -524,4 +546,73 @@ model AuditLog {
   @@index([actorId])
   @@index([targetType, targetId])
   @@map("audit_logs")
+}
+
+
+// A single-use-style link sent to the other party (who has no account) so
+// they can accept or decline mediation. Only a hash of the token is stored.
+model MediationInvitation {
+  id        String   @id @default(cuid())
+  disputeId String
+  dispute   Dispute  @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([disputeId])
+  @@map("mediation_invitations")
+}
+
+// In-app notifications shown in the bell/notifications pages. Distinct from
+// NotificationLog, which records WhatsApp/email delivery attempts.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+// Small key/value store for platform-wide settings (e.g. the default
+// WhatsApp number), editable from the platform admin dashboard.
+model PlatformSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+
+// One linked WhatsApp account. scopeKey is "platform" for the default
+// number, or a courthouse id for a courthouse's own number. Baileys' login
+// credentials live here (not on disk) because Render's disk is wiped on
+// every deploy.
+model WhatsAppSession {
+  scopeKey    String   @id
+  phoneNumber String?
+  creds       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  keys WhatsAppAuthKey[]
+
+  @@map("whatsapp_sessions")
+}
+
+model WhatsAppAuthKey {
+  scopeKey String
+  type     String
+  keyId    String
+  value    String
+  session  WhatsAppSession @relation(fields: [scopeKey], references: [scopeKey], onDelete: Cascade)
+
+  @@id([scopeKey, type, keyId])
+  @@map("whatsapp_auth_keys")
 }

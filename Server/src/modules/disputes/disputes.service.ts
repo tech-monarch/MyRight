@@ -1,6 +1,6 @@
 import { prisma } from "@/infrastructure/database/prisma";
 import { AppError } from "@/utils/AppError";
-import type { DisputeStatus, Prisma } from "@prisma/client";
+import type { DisputeStatus, PartyResponse, Prisma } from "@prisma/client";
 
 export function findDisputeWithAssignment(id: string) {
   return prisma.dispute.findUnique({
@@ -120,18 +120,23 @@ export async function transitionStatus(
 
 /**
  * Moves a case to MEDIATOR_ASSIGNED once a mediator is on it AND mediation
- * has been requested. Does nothing for any other status (e.g. a lawyer
- * assigned while the case is still UNDER_REVIEW stays UNDER_REVIEW until the
- * owner actually requests mediation), so it is safe to call from both
- * "lawyer assigned" and "mediation requested", whichever happens second.
- * Returns the status the case is in afterwards.
+ * can proceed. Mediation can proceed when the case has no other-party invite
+ * (MEDIATION_REQUESTED), or the other party has ACCEPTED (from
+ * AWAITING_OTHER_PARTY). A case still waiting on, or declined by, the other
+ * party stays put. Does nothing for any other status, so it is safe to call
+ * from "lawyer assigned", "mediation requested" and "invitation accepted",
+ * whichever happens last. Returns the status the case is in afterwards.
  */
 export async function markMediatorAssignedIfReady(
   disputeId: string,
   currentStatus: DisputeStatus,
-  changedById: string
+  changedById: string,
+  otherPartyResponse?: PartyResponse | null
 ): Promise<DisputeStatus> {
-  if (currentStatus !== "MEDIATION_REQUESTED" && currentStatus !== "AWAITING_OTHER_PARTY") return currentStatus;
+  const canProceed =
+    currentStatus === "MEDIATION_REQUESTED" ||
+    (currentStatus === "AWAITING_OTHER_PARTY" && otherPartyResponse === "ACCEPTED");
+  if (!canProceed) return currentStatus;
   await transitionStatus(disputeId, currentStatus, "MEDIATOR_ASSIGNED", changedById, "Mediator assigned");
   return "MEDIATOR_ASSIGNED";
 }

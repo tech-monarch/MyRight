@@ -25,6 +25,9 @@ export const createResolution = asyncHandler(async (req: Request, res: Response)
   if (req.user!.role === "DISPUTANT" && dispute.ownerId !== req.user!.id) {
     throw AppError.forbidden("Only the case owner or assigned mediator can propose a resolution.");
   }
+  if (req.user!.role !== "DISPUTANT" && req.user!.role !== "LAWYER" && req.user!.role !== "SUPERADMIN") {
+    throw AppError.forbidden("Only the case owner or assigned mediator can propose a resolution.");
+  }
 
   const { resolution, signingUrl } = await resolutionService.createResolution({
     disputeId: dispute.id,

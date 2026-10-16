@@ -103,3 +103,8 @@ export const changePassword = asyncHandler(async (req: Request, res: Response) =
   clearSessionCookie(res);
   res.json({ success: true, data: null });
 });
+
+export const updateContact = asyncHandler(async (req: Request, res: Response) => {
+  const user = await authService.updateContact(req.user!.id, req.body);
+  res.json({ success: true, data: authService.toPublicUser(user) });
+});

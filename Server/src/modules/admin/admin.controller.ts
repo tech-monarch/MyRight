@@ -112,3 +112,63 @@ export const listAuditLog = asyncHandler(async (_req: Request, res: Response) =>
   });
   res.json({ success: true, data: entries });
 });
+
+export const listStaff = asyncHandler(async (req: Request, res: Response) => {
+  const staff = await adminService.listStaff(courthouseIdOrThrow(req));
+  res.json({ success: true, data: staff.map(toPublicLawyer) });
+});
+
+export const createStaff = asyncHandler(async (req: Request, res: Response) => {
+  const { user, tempPassword } = await adminService.createStaff(courthouseIdOrThrow(req), req.body);
+  await writeAuditLog({
+    actorId: req.user!.id,
+    actorLabel: req.user!.name,
+    action: "STAFF_CREATED",
+    targetType: "User",
+    targetId: user.id,
+    result: "SUCCESS",
+    metadata: { permissions: req.body.permissions },
+  });
+  // tempPassword appears in this one response only.
+  res.status(201).json({ success: true, data: { staff: toPublicLawyer(user), tempPassword } });
+});
+
+export const updateStaffPermissions = asyncHandler(async (req: Request, res: Response) => {
+  const staff = await adminService.setStaffPermissions(requireParam(req, "id"), courthouseIdOrThrow(req), req.body.permissions);
+  await writeAuditLog({
+    actorId: req.user!.id,
+    actorLabel: req.user!.name,
+    action: "STAFF_PERMISSIONS_CHANGED",
+    targetType: "User",
+    targetId: staff.id,
+    result: "SUCCESS",
+    metadata: { permissions: req.body.permissions },
+  });
+  res.json({ success: true, data: toPublicLawyer(staff) });
+});
+
+export const updateStaffStatus = asyncHandler(async (req: Request, res: Response) => {
+  const staff = await adminService.setStaffStatus(requireParam(req, "id"), courthouseIdOrThrow(req), req.body.status);
+  await writeAuditLog({
+    actorId: req.user!.id,
+    actorLabel: req.user!.name,
+    action: `STAFF_STATUS_${req.body.status}`,
+    targetType: "User",
+    targetId: staff.id,
+    result: "SUCCESS",
+  });
+  res.json({ success: true, data: toPublicLawyer(staff) });
+});
+
+export const resetStaffPassword = asyncHandler(async (req: Request, res: Response) => {
+  const tempPassword = await adminService.resetStaffPassword(requireParam(req, "id"), courthouseIdOrThrow(req));
+  await writeAuditLog({
+    actorId: req.user!.id,
+    actorLabel: req.user!.name,
+    action: "STAFF_PASSWORD_RESET",
+    targetType: "User",
+    targetId: requireParam(req, "id"),
+    result: "SUCCESS",
+  });
+  res.json({ success: true, data: { tempPassword } });
+});
