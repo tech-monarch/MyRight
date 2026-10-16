@@ -8,6 +8,7 @@ import {
   Users,
   ClipboardList,
   Settings,
+  UserCog,
   ShieldAlert,
   LogOut,
   X,
@@ -17,15 +18,27 @@ import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/Badge";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { logout } from "@/lib/auth-client";
+import { canDo } from "@/lib/permissions";
+import type { StaffPermission, User } from "@/lib/types";
 import { useMobileMenu } from "@/lib/MobileMenuContext";
 
-const navItems = [
+// `needs`: the delegated permission(s) that unlock the link (any one is enough).
+// `adminOnly` links are courthouse-admin only. This only decides what to SHOW;
+// the server enforces every one of these independently.
+const navItems: { href: string; label: string; icon: typeof Scale; needs?: StaffPermission[]; adminOnly?: boolean }[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/cases", label: "Cases", icon: Scale },
-  { href: "/admin/lawyers", label: "Lawyers", icon: Users },
-  { href: "/admin/activity", label: "Activity log", icon: ClipboardList },
+  { href: "/admin/cases", label: "Cases", icon: Scale, needs: ["VIEW_CASES", "ASSIGN_CASES"] },
+  { href: "/admin/lawyers", label: "Lawyers", icon: Users, needs: ["MANAGE_LAWYERS", "ASSIGN_CASES"] },
+  { href: "/admin/staff", label: "Staff", icon: UserCog, adminOnly: true },
+  { href: "/admin/activity", label: "Activity log", icon: ClipboardList, adminOnly: true },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
+
+function visible(item: (typeof navItems)[number], user: User | null | undefined) {
+  if (item.adminOnly) return user?.role === "SUPERADMIN";
+  if (item.needs) return canDo(user, ...item.needs);
+  return true;
+}
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -64,7 +77,7 @@ export function AdminSidebar() {
           </div>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
-          {navItems.map((item) => {
+          {navItems.filter((item) => visible(item, user)).map((item) => {
             const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
             return (
               <Link
@@ -85,8 +98,9 @@ export function AdminSidebar() {
           <div className="flex items-start gap-2 rounded-lg bg-surface-off p-3 text-xs text-text-muted">
             <ShieldAlert size={16} className="mt-0.5 shrink-0 text-blue" />
             <span>
-              You are signed in as <Badge tone="blue">SuperAdmin</Badge>. All actions here are
-              logged.
+              You are signed in as{" "}
+              <Badge tone="blue">{user?.role === "COURTHOUSE_STAFF" ? "Courthouse staff" : "Courthouse admin"}</Badge>. All actions
+              here are logged.
             </span>
           </div>
           <button

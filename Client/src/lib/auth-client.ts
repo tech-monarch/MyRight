@@ -2,7 +2,8 @@ import { apiFetch, ApiError, clearCachedCsrfToken } from "@/lib/api";
 import type { User } from "@/lib/types";
 
 export function roleHome(role: User["role"]): string {
-  if (role === "SUPERADMIN") return "/admin";
+  if (role === "PLATFORM_ADMIN") return "/platform";
+  if (role === "SUPERADMIN" || role === "COURTHOUSE_STAFF") return "/admin";
   if (role === "LAWYER") return "/lawyer";
   return "/dashboard";
 }
@@ -27,7 +28,7 @@ export function login(email: string, password: string): Promise<AuthResult> {
   return run(() => apiFetch<User>("/api/auth/login", { method: "POST", body: { identifier: email, password } }));
 }
 
-export function register(data: { name: string; email: string; password: string }): Promise<AuthResult> {
+export function register(data: { name: string; email: string; password: string; phone?: string }): Promise<AuthResult> {
   return run(() => apiFetch<User>("/api/auth/register", { method: "POST", body: data }));
 }
 
@@ -46,4 +47,8 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   await apiFetch("/api/auth/change-password", { method: "POST", body: { currentPassword, newPassword } });
+}
+
+export async function updateContact(input: { phone?: string; email?: string; currentPassword?: string }): Promise<User> {
+  return apiFetch<User>("/api/auth/me", { method: "PATCH", body: input });
 }

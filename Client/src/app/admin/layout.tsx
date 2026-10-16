@@ -4,7 +4,7 @@ import { MobileMenuProvider } from "@/lib/MobileMenuContext";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <RequireAuth allowedRoles={["SUPERADMIN"]}>
+    <RequireAuth allowedRoles={["SUPERADMIN", "COURTHOUSE_STAFF"]}>
       <MobileMenuProvider>
         <div className="flex min-h-screen bg-surface-off">
           <AdminSidebar />

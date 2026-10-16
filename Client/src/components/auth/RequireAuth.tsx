@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useCurrentUser } from "@/lib/useCurrentUser";
+import { roleHome } from "@/lib/auth-client";
 import type { UserRole } from "@/lib/types";
 
 /**
@@ -38,8 +39,7 @@ export function RequireAuth({
       return;
     }
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-      const home = user.role === "SUPERADMIN" ? "/admin" : user.role === "LAWYER" ? "/lawyer" : "/dashboard";
-      router.replace(home);
+      router.replace(roleHome(user.role));
     }
   }, [loading, user, allowedRoles, router, pathname]);
 

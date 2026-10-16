@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/DashboardTopbar";
 import { Card } from "@/components/ui/Card";
+import { ContactDetailsCard } from "@/components/account/ContactDetailsCard";
 import { Label, Input } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { useCurrentUser } from "@/lib/useCurrentUser";
@@ -43,6 +44,7 @@ export default function LawyerSettingsPage() {
       <DashboardTopbar title="Settings" />
       <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
         <div className="mx-auto max-w-xl space-y-6">
+          <ContactDetailsCard />
           <Card>
             <h2 className="text-base font-bold text-navy">Profile</h2>
             <p className="mt-1 text-sm text-text-muted">

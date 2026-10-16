@@ -44,8 +44,8 @@ export default function AddLawyerPage() {
       const result = await createLawyer({
         name,
         username,
-        email: email || undefined,
-        phone: phone || undefined,
+        email,
+        phone,
         specialization: specialization || undefined,
       });
       setCreated({ username: result.lawyer.username ?? username, password: result.tempPassword });
@@ -141,12 +141,14 @@ export default function AddLawyerPage() {
                 <FieldHint>Generated automatically from the name. You can edit it.</FieldHint>
               </div>
               <div>
-                <Label htmlFor="email">Email (optional)</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                <FieldHint>They can also sign in with this. Case updates are sent here too.</FieldHint>
               </div>
               <div>
-                <Label htmlFor="phone">Phone number (optional)</Label>
-                <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <Label htmlFor="phone">Phone number</Label>
+                <Input id="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07012345678" />
+                <FieldHint>Used for WhatsApp alerts when a case is assigned.</FieldHint>
               </div>
               <div>
                 <Label htmlFor="specialization">Specialization (optional)</Label>
@@ -160,7 +162,7 @@ export default function AddLawyerPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={creating || !name || !username}
+                disabled={creating || !name || !username || !email || !phone}
                 icon={creating ? <Loader2 size={16} className="animate-spin" /> : undefined}
               >
                 {creating ? "Creating account..." : "Create lawyer account"}

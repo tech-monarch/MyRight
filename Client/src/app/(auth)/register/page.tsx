@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -66,6 +66,18 @@ export default function RegisterPage() {
             onChange={(e) => update("email", e.target.value)}
             required
           />
+        </div>
+        <div>
+          <Label htmlFor="phone">Phone number (optional)</Label>
+          <Input
+            id="phone"
+            type="tel"
+            autoComplete="tel"
+            placeholder="07012345678"
+            value={form.phone}
+            onChange={(e) => update("phone", e.target.value)}
+          />
+          <FieldHint>Used to send you WhatsApp updates about your case.</FieldHint>
         </div>
         <div>
           <Label htmlFor="password">Password</Label>

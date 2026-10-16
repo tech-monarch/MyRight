@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { changePassword } from "@/lib/auth-client";
 import { ApiError } from "@/lib/api";
 import { WhatsAppConnectCard } from "@/components/admin/WhatsAppConnectCard";
+import { ContactDetailsCard } from "@/components/account/ContactDetailsCard";
 
 export default function AdminSettingsPage() {
   const router = useRouter();
@@ -75,7 +76,16 @@ export default function AdminSettingsPage() {
             </form>
           </Card>
 
-          <WhatsAppConnectCard />
+          <ContactDetailsCard />
+
+          {user?.role === "SUPERADMIN" && (
+            <WhatsAppConnectCard
+              base="/api/admin/whatsapp"
+              title="WhatsApp number for this courthouse"
+              intro="Case alerts for your courthouse are sent from this number. If you don't set one, messages go out from the platform's default number."
+              allowUseDefault
+            />
+          )}
 
           <Card className="bg-surface-off">
             <p className="text-sm text-text-muted">

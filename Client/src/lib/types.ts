@@ -3,7 +3,9 @@
 // OpenAPI/schema export step yet, see README for that as a suggested
 // follow-up once the API surface stabilizes.
 
-export type UserRole = "DISPUTANT" | "LAWYER" | "SUPERADMIN";
+export type UserRole = "DISPUTANT" | "LAWYER" | "SUPERADMIN" | "PLATFORM_ADMIN" | "COURTHOUSE_STAFF";
+export type StaffPermission = "MANAGE_LAWYERS" | "ASSIGN_CASES" | "VIEW_CASES";
+export type PartyResponse = "PENDING" | "ACCEPTED" | "DECLINED";
 export type UserStatus = "ACTIVE" | "SUSPENDED" | "DEACTIVATED";
 
 export interface User {
@@ -17,6 +19,7 @@ export interface User {
   specialization: string | null;
   courthouseId: string | null;
   mustChangePassword: boolean;
+  permissions?: StaffPermission[];
   createdAt: string;
 }
 
@@ -40,6 +43,7 @@ export interface Dispute {
   otherPartyContact: string | null;
   desiredOutcome: string | null;
   status: DisputeStatus;
+  otherPartyResponse?: PartyResponse | null;
   createdAt: string;
   updatedAt: string;
   assignment?: { lawyerId: string; lawyer?: { name: string } } | null;
@@ -145,6 +149,30 @@ export type WhatsAppStatus = "disabled" | "disconnected" | "connecting" | "await
 
 export interface WhatsAppState {
   status: WhatsAppStatus;
+  enabled: boolean;
+  number: string | null;
   qrDataUrl: string | null;
+  pairingCode: string | null;
   connectedNumber: string | null;
+  /** Courthouse view only: the platform default it falls back to. */
+  platformDefault?: { status: WhatsAppStatus; number: string | null } | null;
+}
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface PlatformCourthouse {
+  id: string;
+  name: string;
+  createdAt: string;
+  counts: { admins: number; staff: number; lawyers: number };
+  admins: { id: string; name: string; username: string | null; email: string | null; phone: string | null; status: UserStatus }[];
+  whatsapp: { number: string | null; linked: boolean };
 }

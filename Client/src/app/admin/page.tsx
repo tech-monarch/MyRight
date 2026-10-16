@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/Badge";
 import { useApi } from "@/lib/useApi";
 import { listLawyers, listCourthouseCases, listAuditLog } from "@/lib/admin-client";
 import { statusLabel, statusTone } from "@/lib/dispute-display";
+import { useCurrentUser } from "@/lib/useCurrentUser";
+import { canDo, PERMISSION_LABELS } from "@/lib/permissions";
 
-export default function AdminDashboardPage() {
+function AdminStats() {
   const { data: lawyers, loading: loadingLawyers } = useApi(() => listLawyers(), []);
   const { data: cases, loading: loadingCases } = useApi(() => listCourthouseCases(), []);
   const { data: auditLog, loading: loadingAudit } = useApi(() => listAuditLog(), []);
@@ -123,4 +125,47 @@ export default function AdminDashboardPage() {
       </main>
     </>
   );
+}
+
+function StaffHome() {
+  const { data: user } = useCurrentUser();
+  const links = [
+    { href: "/admin/lawyers", label: "Lawyers", hint: "Add and manage lawyers", show: canDo(user, "MANAGE_LAWYERS", "ASSIGN_CASES") },
+    { href: "/admin/cases", label: "Cases", hint: "See and assign the courthouse's cases", show: canDo(user, "VIEW_CASES", "ASSIGN_CASES") },
+  ].filter((l) => l.show);
+  return (
+    <>
+      <DashboardTopbar title="Dashboard" />
+      <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+        <div className="mx-auto max-w-2xl space-y-4">
+          <Card>
+            <h2 className="text-base font-bold text-navy">Welcome, {user?.name ?? "..."}</h2>
+            <p className="mt-1 text-sm text-text-muted">Your courthouse admin has given you access to:</p>
+            <ul className="mt-3 space-y-1 text-sm text-navy">
+              {(user?.permissions ?? []).map((p) => (
+                <li key={p}>{"\u2022"} {PERMISSION_LABELS[p].label}</li>
+              ))}
+              {(user?.permissions ?? []).length === 0 && <li className="text-text-muted">Nothing yet. Ask your courthouse admin to grant you access.</li>}
+            </ul>
+          </Card>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {links.map((l) => (
+              <Link key={l.href} href={l.href}>
+                <Card className="transition-colors hover:border-blue">
+                  <p className="text-sm font-semibold text-navy">{l.label}</p>
+                  <p className="mt-0.5 text-sm text-text-muted">{l.hint}</p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </main>
+    </>
+  );
+}
+
+export default function AdminDashboardPage() {
+  const { data: user, loading } = useCurrentUser();
+  if (loading) return null;
+  return user?.role === "COURTHOUSE_STAFF" ? <StaffHome /> : <AdminStats />;
 }

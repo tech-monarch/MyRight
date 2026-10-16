@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/DashboardTopbar";
 import { CaseHeader } from "@/components/case/CaseHeader";
 import { CaseTabs } from "@/components/case/CaseTabs";
+import { InvitationStatus } from "@/components/case/InvitationStatus";
 import { useApi } from "@/lib/useApi";
 import { getDispute } from "@/lib/disputes-client";
 
@@ -24,6 +25,7 @@ export default function CaseDetailPage({ params }: { params: { id: string } }) {
           {dispute && (
             <>
               <CaseHeader dispute={dispute} />
+              <InvitationStatus dispute={dispute} canResend />
               <div className="mt-6">
                 <CaseTabs dispute={dispute} />
               </div>

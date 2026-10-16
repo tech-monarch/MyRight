@@ -24,12 +24,15 @@ export default function MediationRequestPage({ params }: { params: { id: string 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [done, setDone] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState("");
+  const [copied, setCopied] = useState(false);
 
   async function handleSubmit() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      await requestMediation(params.id, { contactMethod, contact: contact || undefined });
+      const result = await requestMediation(params.id, { contactMethod, contact: contact || undefined });
+      setInviteUrl(result.inviteUrl ?? "");
       setDone(true);
     } catch (err) {
       setSubmitError(err instanceof ApiError ? err.message : "Couldn't send that request. Please try again.");
@@ -70,10 +73,34 @@ export default function MediationRequestPage({ params }: { params: { id: string 
               <Check size={26} />
             </div>
             <h1 className="mt-4 text-xl font-bold text-navy">Mediation requested</h1>
-            <p className="mt-2 text-sm text-text-muted">
-              We have sent an invitation to {dispute.otherPartyName || "the other party"} to join mediation for this
-              case. You will be notified as soon as they respond, usually within a few days.
-            </p>
+            {inviteUrl ? (
+              <>
+                <p className="mt-2 text-sm text-text-muted">
+                  We&apos;ve sent {dispute.otherPartyName || "the other party"} an invitation to accept or decline. A
+                  mediator can be scheduled once they accept, and you&apos;ll be notified as soon as they respond.
+                </p>
+                <div className="mt-4 rounded-lg border border-border bg-surface-off p-3 text-left">
+                  <p className="text-xs text-text-muted">If they don&apos;t get it, you can share this link yourself:</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <p className="min-w-0 flex-1 truncate font-mono text-xs text-navy">{inviteUrl}</p>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard?.writeText(inviteUrl);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="shrink-0 text-xs font-semibold text-blue hover:underline"
+                    >
+                      {copied ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-text-muted">
+                Your request has been sent. A mediator will be assigned and you&apos;ll be notified here.
+              </p>
+            )}
             <ButtonLink href={`/dashboard/disputes/${dispute.id}`} className="mt-6">
               Back to case
             </ButtonLink>
