@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { LegalResourcesSection } from "@/components/marketing/LegalResourcesSection";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/Button";
@@ -23,6 +24,7 @@ export default function LandingPage() {
         <HowItWorks />
         <WhyMyRight />
         <ADRExplainer />
+        <LegalResourcesSection />
         <CTASection />
       </main>
       <MarketingFooter />

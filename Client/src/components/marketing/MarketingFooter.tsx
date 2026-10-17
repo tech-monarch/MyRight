@@ -16,6 +16,7 @@ export function MarketingFooter() {
           links={[
             ["How it works", "/#how-it-works"],
             ["About ADR", "/#adr"],
+            ["Legal Resources", "/resources"],
             ["Start a dispute", "/register"],
           ]}
         />

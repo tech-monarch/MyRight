@@ -1,5 +1,9 @@
 # MyRight: Frontend (Milestone 8)
 
+> **Legal Resources marketplace (demonstration).** `/resources` and `/resources/[slug]` are a frontend-only product
+> demo with illustrative listings and prices: no payments, no backend, nothing for sale. See
+> [`docs/LEGAL_RESOURCES_MARKETPLACE_ROADMAP.md`](docs/LEGAL_RESOURCES_MARKETPLACE_ROADMAP.md) for what exists and the plan for the real thing.
+
 Next.js 14 (App Router) + TypeScript + Tailwind. This milestone wires the
 UI to the real backend (see the separate `myright-backend` project),
 mock data is gone.
